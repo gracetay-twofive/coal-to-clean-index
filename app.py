@@ -22,7 +22,7 @@ from reporting import build_version_csv, build_versions_pdf, encode_attachment
 
 st.set_page_config(
     page_title="Coal-to-Clean Jurisdictional Readiness Index 2026",
-    page_icon="◆",
+    page_icon=Path(__file__).parent / "assets" / "favicon.png",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -1827,24 +1827,24 @@ def send_results_email(index_data: pd.DataFrame, current_version: dict[str, Any]
         },
     )
     if ok:
-        return True, "Your results have been emailed."
+        return True, "Your results have been emailed!"
     if "Unauthorised" in message or "unauthorised" in message:
         return False, "The Google Sheets connection needs to be reauthorised before email delivery can work."
-    return False, "Email delivery was not completed. Please download the PDF instead."
+    return False, "Email delivery was not completed. Please download the PDF instead"
 
 def lookup_preview(preview_id: str | None) -> dict[str, Any] | None:
     if not preview_id:
         return None
     return next((preview for preview in st.session_state.previews if preview["id"] == preview_id), None)
 
-@st.dialog("For research purposes", width="small")
+@st.dialog("A small request", width="small")
 def research_gate_dialog(index_data: pd.DataFrame) -> None:
     action = st.session_state.gate_action
     current_version = lookup_preview(st.session_state.gate_version_id) or resolve_custom_version()
 
     if st.session_state.gate_processing:
         progress_copy = {
-            "save": "Saving your details and preparing your view...",
+            "save": "Preparing your customised readiness index...",
             "download": "Saving your details and preparing your download...",
             "email": "Saving your details and preparing your email...",
         }.get(action, "Saving your details...")
@@ -1878,7 +1878,7 @@ def research_gate_dialog(index_data: pd.DataFrame) -> None:
             )
             st.session_state.session_logged = st.session_state.session_logged or profile_ok
             st.session_state.logging_notice = None if profile_ok else (
-                "Your details were saved for this session, but Google Sheets logging did not complete. "
+                "Your details were saved for this session, but database logging did not complete. "
                 + profile_message
             )
             st.session_state.profile_capture_pending = False
@@ -1898,15 +1898,15 @@ def research_gate_dialog(index_data: pd.DataFrame) -> None:
         elif action == "email":
             begin_custom_action("email", current_version)
         elif action == "download":
-            st.session_state.action_notice = "Your details are saved. Click Download PDF to continue."
+            st.session_state.action_notice = "Thanks! Please click Download PDF to continue."
             st.session_state.action_notice_type = "success"
         st.rerun()
 
     action_copy = {
-        "save": "Please provide your details to save this priority-adjusted view.",
-        "download": "Please provide your details to download your results as a PDF.",
-        "email": "Please provide your details to email the results to yourself.",
-    }.get(action, "Please provide your details to continue.")
+        "save": "Please provide your details to save your priority-adjusted view",
+        "download": "Please provide your details to download your results as a PDF",
+        "email": "Please provide your details to email the results to yourself",
+    }.get(action, "Please provide your details to continue")
 
     st.markdown(f'<div class="gate-copy">{action_copy}</div>', unsafe_allow_html=True)
     st.markdown(
@@ -1921,7 +1921,7 @@ def research_gate_dialog(index_data: pd.DataFrame) -> None:
             organisation = st.text_input("Organisation", value=contact.get("organisation", ""))
             email = st.text_input("Email", value=contact.get("email", ""))
             st.markdown(
-                '<div class="gate-fine-print">Your details will be used only for this research and to fulfil your request. They will not be used for marketing or shared with third parties.</div>',
+                '<div class="gate-fine-print">Your details will be used only to extend this research and to fulfil your request. They will not be used for marketing or shared with third parties.</div>',
                 unsafe_allow_html=True,
             )
             submitted = st.form_submit_button("Continue")
@@ -1929,7 +1929,7 @@ def research_gate_dialog(index_data: pd.DataFrame) -> None:
         if not submitted:
             return
         if not name.strip() or not organisation.strip() or not valid_email(email):
-            st.error("Complete all fields and enter a valid email address.")
+            st.error("Complete all fields / Enter a valid email address")
             return
 
         st.session_state.contact = {
@@ -1944,7 +1944,7 @@ def research_gate_dialog(index_data: pd.DataFrame) -> None:
         st.rerun()
 
     if current_version is None:
-        st.error("No customised view is available for this action.")
+        st.error("No customised view is available for this action")
         return
 
     # This path is used only if the profile was already completed before the dialog opened.
@@ -2065,7 +2065,7 @@ def render_priorities(index_data: pd.DataFrame) -> None:
             """
             <div class="assessment-copy" style="max-width:980px; font-size:16px;">
             <p>The published index highlights where coal-to-clean transition opportunities appear most credible, executable and investable across jurisdictions. Different organisations, however, weigh policy certainty, market maturity, financial conditions and social safeguards differently.</p>
-            <p>Adjusting the weights lets you test the index against your own decision criteria. This reveals which jurisdictions rise or fall under your priorities, helping focus further due diligence, market entry and engagement.</p>
+            <p>Adjusting the weights lets you apply your own decision criteria to the base index. This reveals which jurisdictions rise or fall under your priorities, helping focus further due diligence, market entry and engagement.</p>
             </div>
             <div class="priority-form-space"></div>
             """,
@@ -2105,7 +2105,7 @@ def render_priorities(index_data: pd.DataFrame) -> None:
         if not applied:
             return
         if industry == "Select your industry" or role == "Select your role":
-            st.error("Select both your industry and role before applying your priorities.")
+            st.error("Select both your industry and role before applying your priorities")
             return
 
         st.session_state.profile_industry = industry
