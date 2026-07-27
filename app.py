@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html
 import json
+import random
 import re
 import time
 import uuid
@@ -27,9 +28,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-DATA_FILE = Path(__file__).parent / "data" / "Index_Model.xlsx"
+DATA_FILE = Path(__file__).parent / "data" / "Index_Model_Streamlit.xlsx"
 SHEET_NAME = "Streamlit"
 OVERLAY_SHEET_NAME = "OVERLAY"
+MARKET_DRIVERS_SHEET = "MARKET_DRIVERS"
+MARKET_CONTEXT_SHEET = "MARKET_CONTEXT"
+MARKET_DEVELOPMENTS_SHEET = "MARKET_DEVELOPMENTS"
+
 
 PILLAR_SOURCES = [
     "PILLAR 1 score\nEnergy system conditions",
@@ -190,6 +195,19 @@ SURVEY_ITEMS = [
     },
 ]
 
+# The final validation constructs and items will be inserted after evidence recoding.
+# Each construct can contain three items, while each participant sees only a
+# randomised subset of constructs rather than the full item bank.
+VALIDATION_QUESTION_BANK: list[dict[str, Any]] = []
+VALIDATION_CONSTRUCTS_PER_PARTICIPANT = 8
+VALIDATION_SCALE = {
+    1: "Strongly disagree",
+    2: "Disagree",
+    3: "Neither agree nor disagree",
+    4: "Agree",
+    5: "Strongly agree",
+}
+
 REQUIRED_COLUMNS = [
     "Country",
     "ISO3",
@@ -261,7 +279,7 @@ header[data-testid="stHeader"] { background: transparent; }
 [data-testid="stSidebar"] .stButton > button {
     background: transparent !important; border: 0 !important; box-shadow: none !important;
     color: #ffffff !important; padding: 0 !important; min-height: 0 !important; height: auto !important;
-    justify-content: flex-start !important; font-size: 14px !important; font-weight: 300 !important;
+    justify-content: flex-start !important; font-size: 14px !important; font-weight: 400 !important;
     text-transform: uppercase; letter-spacing: .03em; border-radius: 0 !important;
 }
 [data-testid="stSidebar"] .stButton > button:hover { color:#ffffff !important; opacity:.78; transform:translateX(3px); }
@@ -285,10 +303,8 @@ header[data-testid="stHeader"] { background: transparent; }
     letter-spacing:.04em; text-transform:uppercase; white-space:nowrap;
 }
 .st-key-top_nav .stButton > button:hover { color:var(--accent) !important; box-shadow:inset 0 -5px 0 var(--warm-accent) !important; }
-[data-testid="stSidebar"] .stButton > button *,
-.st-key-top_nav .stButton > button * {
-    font-weight: 700 !important;
-}
+[data-testid="stSidebar"] .stButton > button * { font-weight: 500 !important; }
+.st-key-top_nav .stButton > button * { font-weight: 700 !important; }
 .st-key-nav_overall_active .stButton > button,
 .st-key-nav_market_active .stButton > button,
 .st-key-nav_priorities_active .stButton > button {
@@ -370,8 +386,8 @@ header[data-testid="stHeader"] { background: transparent; }
 .st-key-ranking_chart_slot { margin-top: -4px !important; }
 .st-key-ranking_chart_slot [data-testid="stPlotlyChart"] { margin-top: 0 !important; padding-top: 0 !important; }
 
-.st-key-ranking_section, .st-key-table_section, .st-key-assessment_section, .st-key-priorities_section, .st-key-methodology_section {
-    background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 28px;
+.st-key-ranking_section, .st-key-table_section, .st-key-assessment_section, .st-key-priorities_section, .st-key-methodology_section, .st-key-market_drivers_section, .st-key-market_developments_section {
+    background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 28px 28px 50px 28px;
     box-shadow: 0 8px 24px rgba(43, 86, 136, .05);
 }
 .st-key-assessment_section { padding-bottom: 50px; }
@@ -446,6 +462,196 @@ header[data-testid="stHeader"] { background: transparent; }
 .pillar-definition p { margin: 0; color: var(--ink-muted); line-height: 1.5; }
 .assessment-footnote { margin-top:28px; padding-top:14px; border-top:1px solid rgba(43,86,136,.12); color:var(--ink-muted); font-size:11px; line-height:1.45; }
 
+.chart-explainer {
+    margin: 25px auto 25px auto;
+    padding: 0;
+    max-width: 70%;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.68;
+    text-align: left;
+}
+.chart-explainer p { margin: 0; }
+.chart-explainer p + p { margin-top: 7px; }
+.chart-explainer strong { color: var(--ink); font-weight: 600; }
+.market-intro {
+    width:100%;
+    max-width:none;
+    margin:0 0 24px 0;
+    color:var(--ink);
+    font-size:14px;
+    line-height:1.68;
+    text-align:left;
+}
+.market-driver-table {
+    width:100%;
+    table-layout:fixed;
+    border-collapse:collapse;
+    margin-top:10px;
+    font-size:13px;
+    line-height:1.5;
+}
+.market-driver-table th,
+.market-driver-table td {
+    overflow-wrap:break-word;
+    word-break:normal;
+}
+.market-driver-table th {
+    padding:10px 12px;
+    text-align:left;
+    vertical-align:middle;
+    background:#fffae6;
+    font-weight:600;
+    border:1px solid rgba(43,86,136,.12);
+}
+.market-driver-table td {
+    padding:12px;
+    vertical-align:top;
+    border:1px solid rgba(43,86,136,.10);
+}
+.market-confidence-effect { color:var(--accent); font-weight:600; }
+.market-context-copy {
+    margin-top: 24px;
+    padding-bottom: 25px !important;
+    color: var(--ink);
+    font-size: 15px !important;
+    line-height: 1.55;
+}
+
+.market-context-copy .market-context-heading {
+    margin: 0 0 12px 0;
+    color: var(--ink);
+    font-size: 15px !important;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.market-context-copy p {
+    margin: 0 0 12px 0;
+    font-size: 15px !important;
+    line-height: 1.55;
+}
+
+.market-context-copy .market-context-list {
+    margin: 15px 0 0 20px;
+    padding: 0;
+    font-size: 15px !important;
+    line-height: 1.55;
+}
+
+.market-context-copy .market-context-list li {
+    margin-bottom: 10px;
+    font-size: 15px !important;
+}
+
+.market-context-copy .market-context-list li:last-child {
+    margin-bottom: 0;
+}
+
+.market-context-copy strong {
+    color: var(--accent);
+    font-weight: 700;
+}
+.market-development-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:14px; }
+.market-development-card { padding:18px 20px; border:1px solid rgba(43,86,136,.14); border-radius:11px; background:rgba(255,255,255,.82); }
+.market-development-title { font-size:15px; font-weight:600; line-height:1.45; color:var(--ink); margin-bottom:6px; }
+.market-development-meta { color:var(--ink-muted); font-size:11px; line-height:1.45; margin-bottom:10px; }
+.market-development-meta a {
+    color:var(--accent) !important;
+    font-weight:600;
+    text-decoration:underline !important;
+    text-decoration-color:var(--warm-accent-strong) !important;
+    text-decoration-thickness:2px !important;
+    text-underline-offset:3px;
+}
+.market-development-meta a:hover { opacity:.76; }
+.market-development-summary { color:var(--ink); font-size:13px; line-height:1.58; }
+.market-development-map { margin-top:10px; color:var(--ink-muted); font-size:11px; line-height:1.45; }
+.st-key-market_main_link { margin-top:24px; text-align:center; }
+.st-key-market_main_link .stButton > button { background:transparent !important; border:0 !important; text-decoration:underline !important; color:var(--accent) !important; }
+.market-development-signal {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 18px;
+    color: var(--accent);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.market-development-signal-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex: 0 0 20px;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+@media (max-width: 768px) {
+    .market-development-signal {
+        font-size: 15px;
+    }
+
+    .market-development-signal-icon {
+        width: 26px;
+        height: 26px;
+        flex-basis: 26px;
+        font-size: 15px;
+    }
+}
+
+.validation-shell {
+    max-width: 1020px;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.65;
+}
+.validation-access-card,
+.validation-consent-card,
+.validation-question-card {
+    padding: 18px 20px;
+    border: 1px solid rgba(43,86,136,.14);
+    border-radius: 12px;
+    background: rgba(255,255,255,.84);
+    margin: 14px 0;
+}
+.validation-code {
+    display: inline-block;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: var(--warm-accent);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+.validation-note {
+    color: var(--ink-muted);
+    font-size: 12px;
+    line-height: 1.55;
+}
+.validation-question-label {
+    color: var(--ink);
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+.validation-question-description {
+    color: var(--ink-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-bottom: 8px;
+}
+
 .action-progress-wrap {
     min-height: 46px;
     margin: 18px 0 10px 0;
@@ -508,6 +714,10 @@ header[data-testid="stHeader"] { background: transparent; }
 .backend-note { padding: 10px 12px; background: rgba(121, 166, 210, .14); border-radius: 7px; }
 .gate-copy { font-size:14px; line-height:1.55; color:var(--ink); margin-bottom:10px; }
 .gate-fine-print { font-size:10px; line-height:1.45; color:var(--ink-muted); margin-top:10px; margin-bottom:24px; }
+.st-key-gate_primary_button .stButton > button,
+.st-key-gate_primary_button .stFormSubmitButton > button { width:100% !important; }
+.st-key-gate_decline_button .stButton > button { border:0 !important; background:transparent !important; box-shadow:none !important; font-size:13px !important; font-weight:600 !important; text-decoration:underline !important; color:var(--ink) !important; }
+.gate-inline-progress { min-height:90px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; color:var(--accent); font-size:13px; font-weight:600; }
 .gate-progress-wrap {
     min-height: 180px;
     display: flex;
@@ -551,9 +761,26 @@ header[data-testid="stHeader"] { background: transparent; }
     .top-nav { gap: 24px; }
     .period-nav { margin-left: 0; }
     .sidebar-methodology { position: static; width: auto; margin-top: 46px; }
-    .st-key-ranking_section, .st-key-table_section, .st-key-assessment_section, .st-key-priorities_section, .st-key-methodology_section { padding: 20px 18px; }
+    .st-key-ranking_section, .st-key-table_section, .st-key-assessment_section, .st-key-priorities_section, .st-key-methodology_section, .st-key-market_drivers_section, .st-key-market_developments_section { padding: 20px 18px 25px; }
     .pillar-legend-box { grid-template-columns:1fr; }
 }
+
+/* Expanded methodology page */
+.methodology-copy .pillar-heading { font-size:15px; font-weight:700; line-height:1.5; margin:28px 0 8px; }
+.methodology-copy .indicator-list { margin-top:8px !important; }
+.methodology-copy .indicator-list li { margin-bottom:12px; line-height:1.6; }
+.methodology-copy a { color:var(--accent) !important; font-weight:600; text-decoration:underline !important; text-decoration-color:var(--warm-accent-strong) !important; text-decoration-thickness:2px !important; text-underline-offset:3px; }
+.methodology-note { margin:18px 0; padding:14px 16px; border-left:4px solid var(--accent-mid); background:rgba(121,166,210,.12); font-size:13px; line-height:1.55; }
+.methodology-weight-table { width:100%; border-collapse:collapse; margin:12px 0 20px; font-size:13px; }
+.methodology-weight-table th, .methodology-weight-table td { padding:9px 10px; text-align:left; vertical-align:top; border-bottom:1px solid rgba(43,86,136,.12); }
+.methodology-weight-table th { font-weight:700; background:#fffae6; }
+.validation-box { width:70%; margin:20px auto 8px auto; padding:18px 20px; border:1px solid var(--warm-accent-strong); border-radius:10px; background:rgba(255,255,255,.78); }
+.validation-title { font-size:17px; font-weight:500; margin-bottom:10px; }
+.validation-grid { display:grid; grid-template-columns:minmax(260px,1fr) auto; gap:8px 24px; font-size:13px; line-height:1.45; }
+.validation-value { color:var(--accent); font-weight:700; text-align:right; }
+.methodology-footer { margin-top:30px !important; padding-top:14px; border-top:1px solid rgba(43,86,136,.12); color:var(--ink-muted); font-size:10px; line-height:1.45; letter-spacing:.015em; text-transform:uppercase; }
+@media (max-width:760px) { .validation-grid { grid-template-columns:1fr; } .validation-value { text-align:left; margin-bottom:7px; } .validation-box { width:100%; } .methodology-footer { font-size:10px; } .market-development-grid { grid-template-columns:1fr; } }
+
 </style>
 """
 
@@ -694,6 +921,35 @@ def load_market_overlay(file_path: str) -> pd.DataFrame:
     return frame.reset_index(drop=True)
 
 
+@st.cache_data(show_spinner=False)
+def load_market_content(
+    file_path: str,
+    file_modified_time: float,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Read the public-facing market drivers, context signals and developments."""
+    workbook = load_workbook(file_path, read_only=True, data_only=True)
+
+    def read_sheet(sheet_name: str) -> pd.DataFrame:
+        if sheet_name not in workbook.sheetnames:
+            raise ValueError(f"The workbook does not contain a '{sheet_name}' sheet.")
+        rows = list(workbook[sheet_name].iter_rows(values_only=True))
+        if not rows:
+            return pd.DataFrame()
+        headers = list(rows[0])
+        while headers and headers[-1] is None:
+            headers.pop()
+        data = [list(row[:len(headers)]) for row in rows[1:] if any(v not in (None, "") for v in row[:len(headers)])]
+        return pd.DataFrame(data, columns=headers)
+
+    try:
+        drivers = read_sheet(MARKET_DRIVERS_SHEET)
+        context = read_sheet(MARKET_CONTEXT_SHEET)
+        developments = read_sheet(MARKET_DEVELOPMENTS_SHEET)
+    finally:
+        workbook.close()
+    return drivers, context, developments
+
+
 def market_results(index_data: pd.DataFrame, overlay_data: pd.DataFrame, period: str) -> pd.DataFrame:
     score_column = "Q1 overlay score" if period == "q1" else "Q2 overlay score"
     rank_column = "Q1 rank" if period == "q1" else "Q2 rank"
@@ -756,6 +1012,12 @@ def initialise_state() -> None:
         "profile_capture_pending": False,
         "profile_capture_reason": None,
         "gate_processing": False,
+        "download_authorised_version_id": None,
+        "validation_access_granted": False,
+        "validation_participant_code": "VAL-" + uuid.uuid4().hex[:8].upper(),
+        "validation_registered": False,
+        "validation_assignment": [],
+        "validation_notice": None,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -792,6 +1054,7 @@ def reset_priority_survey() -> None:
     st.session_state.profile_capture_pending = False
     st.session_state.profile_capture_reason = None
     st.session_state.gate_processing = False
+    st.session_state.download_authorised_version_id = None
 
     for item in SURVEY_ITEMS:
         st.session_state[f"priority_slider_{item['key']}"] = 3
@@ -890,7 +1153,7 @@ def render_header() -> None:
 
 def render_top_navigation(view: str, market_period: str | None = None) -> None:
     with st.container(key="top_nav"):
-        nav_columns = st.columns([1.2, 2.0, 2.1, 3.7], gap="medium")
+        nav_columns = st.columns([1.2, 1.68, 2.05, 4.07], gap="small")
         nav_items = [
             ("overall", "Main Index"),
             ("market", "Market Confidence"),
@@ -985,18 +1248,16 @@ def ranking_figure(results: pd.DataFrame, show_all: bool, mode: str) -> go.Figur
     overlay_mode = mode in {"market", "custom"}
     customdata = []
     for _, row in displayed.iterrows():
-        capacity = row.get("Operating coal capacity (MW)")
-        capacity_text = "Not available" if pd.isna(capacity) else f"{float(capacity):,.0f} MW"
         rank_change = int(row.get("Rank change", 0))
         change_text = "No change" if rank_change == 0 else f"{rank_change:+d} position{'s' if abs(rank_change) != 1 else ''}"
-        customdata.append([int(row["Rank"]), change_text, capacity_text, int(row.get("Base rank", row["Rank"]))])
+        customdata.append([int(row["Rank"]), change_text, int(row.get("Base rank", row["Rank"]))])
 
     score_text = displayed["Overall score"].map(lambda value: f"{float(value):.2f}")
     hover_template = (
         "<b>%{y}</b><br>Adjusted rank: %{customdata[0]}<br>"
-        "Position change: %{customdata[1]}<br>Operating coal capacity: %{customdata[2]}<extra></extra>"
+        "Position change: %{customdata[1]}<extra></extra>"
         if overlay_mode
-        else "<b>%{y}</b><br>Rank: %{customdata[0]}<br>Operating coal capacity: %{customdata[2]}<extra></extra>"
+        else "<b>%{y}</b><br>Rank: %{customdata[0]}<extra></extra>"
     )
 
     figure = go.Figure()
@@ -1044,7 +1305,7 @@ def ranking_figure(results: pd.DataFrame, show_all: bool, mode: str) -> go.Figur
                 mode="markers",
                 customdata=customdata,
                 marker=dict(symbol="diamond", size=13, color="#2b5688", line=dict(width=1, color="#ffffff")),
-                hovertemplate="<b>%{y}</b><br>Base rank: %{customdata[3]}<br>Base index score: %{x:.2f}<extra></extra>",
+                hovertemplate="<b>%{y}</b><br>Base rank: %{customdata[2]}<br>Base index score: %{x:.2f}<extra></extra>",
                 name="Base index",
             )
         )
@@ -1300,7 +1561,7 @@ def render_html_table(
       <style>
         .readiness-table-component {{ height:{height}px; display:flex; flex-direction:column; font-family:Montserrat,sans-serif; color:rgba(0,0,0,.90); }}
         .readiness-table-component * {{ box-sizing:border-box; }}
-        .readiness-table-toolbar {{ height:44px; flex:0 0 44px; display:flex; align-items:center; justify-content:flex-end; gap:8px; background:transparent; position:relative; overflow:visible; z-index:100; }}
+        .readiness-table-toolbar {{ height:64px; flex:0 0 64px; display:flex; align-items:flex-end; justify-content:flex-end; gap:8px; padding-top:24px; margin-bottom:10px; background:transparent; position:relative; overflow:visible; z-index:100; }}
         .readiness-tool {{ position:relative; }}
         .readiness-tool summary {{ width:38px; height:34px; border:1px solid rgba(43,86,136,.42); border-radius:7px; background:#ffffff; display:flex; align-items:center; justify-content:center; cursor:pointer; list-style:none; color:#2b5688 !important; opacity:1; }}
         .readiness-tool summary::-webkit-details-marker {{ display:none; }}
@@ -1318,13 +1579,14 @@ def render_html_table(
         .readiness-table-component tbody tr:nth-child(even) {{ background:#fffdf3; }}
         .readiness-table-component tbody tr:hover {{ background:#fff5cc; }}
         .readiness-table-component .rank-cell {{ text-align:center; }}
-        .readiness-tooltip {{ position:absolute; bottom:42px; right:50%; transform:translateX(50%); padding:5px 8px; background:rgba(0,0,0,.78); color:white; border-radius:5px; font-size:10px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .12s ease; }}
-        .readiness-tool:hover .readiness-tooltip {{ opacity:1; }}
+        .readiness-tooltip {{ position:absolute; left:50%; bottom:42px; transform:translateX(-50%); padding:5px 8px; background:rgba(0,0,0,.78); color:white; border-radius:5px; font-size:10px; white-space:nowrap; opacity:0; visibility:hidden; pointer-events:none; transition:opacity .12s ease, visibility .12s ease; }}
+        .readiness-tooltip::after {{ content:""; position:absolute; left:50%; top:100%; transform:translateX(-50%); border:5px solid transparent; border-top-color:rgba(0,0,0,.78); }}
+        .readiness-tool:hover .readiness-tooltip, .readiness-tool:focus-within .readiness-tooltip {{ opacity:1; visibility:visible; }}
       </style>
       <div class="readiness-table-toolbar">
         <details class="readiness-tool" id="column-picker">
-          <summary aria-label="Choose columns"><span class="columns-glyph" aria-hidden="true">▥</span></summary>
-          <span class="readiness-tooltip">Choose columns</span>
+          <summary aria-label="Choose columns" title="Choose columns"><span class="columns-glyph" aria-hidden="true">▥</span></summary>
+          <span class="readiness-tooltip" role="tooltip">Choose columns</span>
           <div class="readiness-column-menu">{column_options}</div>
         </details>
       </div>
@@ -1385,6 +1647,34 @@ def render_chart(
         },
     )
 
+
+def render_chart_explainer(view: str, market_period: str | None, mode: str) -> None:
+    """Add concise interpretation below the ranking chart."""
+    scope = (
+        "This index assesses jurisdictions with grid-connected coal-fired power plants currently in operation, <br>based on Global Energy Monitor’s Global Coal Plant Tracker data (January 2026 release)."
+    )
+    if view == "market":
+        quarter = "Q1 2026" if market_period == "q1" else "Q2 2026"
+        st.markdown(
+            f"""
+            <div class="chart-explainer">
+              <p>The {quarter} overlay changes the relative emphasis placed on existing readiness indicators according to market evidence observed during the quarter. The same adjusted weights are applied across all jurisdictions.</p>
+              <p>{scope}</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
+
+    extra = ""
+    if mode == "custom":
+        extra = "<p>The adjusted ranking reflects the priorities and industry profile entered in the survey and remains separate from the published index and market-confidence overlays.</p>"
+    st.markdown(
+        f'<div class="chart-explainer"><p>{scope}</p>{extra}</div>',
+        unsafe_allow_html=True,
+    )
+
+
 @st.fragment
 def render_ranking_chart_fragment(
     results: pd.DataFrame,
@@ -1419,6 +1709,7 @@ def render_ranking_chart_fragment(
             "readiness_index_country_ranking",
             f"ranking_chart_{view}_{custom_id or market_period or 'base'}",
         )
+        render_chart_explainer(view, market_period, mode)
 
 
 def get_visible_previews() -> list[dict[str, Any]]:
@@ -1593,14 +1884,10 @@ def display_results(
             unsafe_allow_html=True,
         )
 
+
 def report_versions_for_export(current_version: dict[str, Any]) -> list[dict[str, Any]]:
-    if current_version["id"] in st.session_state.saved_preview_ids:
-        return [current_version]
-    return []
-
-
-def save_preview(current_version: dict[str, Any]) -> None:
-    st.session_state.saved_preview_ids = [current_version["id"]]
+    """The current customised view is available for export as soon as it is created."""
+    return [current_version]
 
 
 def begin_custom_action(action: str, current_version: dict[str, Any]) -> None:
@@ -1621,61 +1908,37 @@ def render_action_progress(label: str) -> None:
     )
 
 
+def prepare_pdf(index_data: pd.DataFrame, current_version: dict[str, Any]) -> tuple[bool, str]:
+    try:
+        st.session_state.cached_pdf = build_versions_pdf(
+            base_results(index_data),
+            report_versions_for_export(current_version),
+        )
+        st.session_state.cached_pdf_version_id = current_version["id"]
+        return True, "PDF ready."
+    except Exception as exc:
+        st.session_state.cached_pdf = None
+        st.session_state.cached_pdf_version_id = None
+        return False, "The PDF could not be prepared. " + str(exc)
+
+
 def perform_custom_action(index_data: pd.DataFrame, current_version: dict[str, Any]) -> None:
-    """Complete a queued save or email action after the progress UI is visible."""
+    """Complete a queued PDF preparation or email action."""
     action = st.session_state.action_in_progress
     version_id = st.session_state.action_version_id
     if not action or version_id != current_version["id"]:
         return
 
-    # Give the browser a brief moment to paint the spinner and disabled buttons.
     time.sleep(0.18)
 
-    if st.session_state.profile_capture_pending:
-        contact = st.session_state.contact
-        profile_ok, profile_message = post_backend(
-            "log_profile",
-            {
-                "session_id": st.session_state.session_id,
-                "captured_at": singapore_now(),
-                "name": contact["name"],
-                "organisation": contact["organisation"],
-                "email": contact["email"],
-                "reason": st.session_state.profile_capture_reason or action,
-                "industry": st.session_state.profile_industry,
-                "role": st.session_state.profile_role,
-                "started_at": st.session_state.session_started_at,
-            },
-            timeout=12,
+    if action == "prepare_download":
+        ok, message = prepare_pdf(index_data, current_version)
+        st.session_state.action_notice = (
+            "Your PDF is ready. Click Download PDF once more to save it."
+            if ok
+            else message
         )
-        st.session_state.session_logged = st.session_state.session_logged or profile_ok
-        st.session_state.logging_notice = None if profile_ok else (
-            "Your details were saved for this session, but Google Sheets logging did not complete. "
-            + profile_message
-        )
-        st.session_state.profile_capture_pending = False
-        st.session_state.profile_capture_reason = None
-
-    if action == "save":
-        save_preview(current_version)
-        try:
-            pdf_content = build_versions_pdf(
-                base_results(index_data),
-                report_versions_for_export(current_version),
-            )
-            st.session_state.cached_pdf = pdf_content
-            st.session_state.cached_pdf_version_id = current_version["id"]
-            st.session_state.action_notice = "Saved. You can now download or email this view."
-            st.session_state.action_notice_type = "success"
-        except Exception as exc:
-            st.session_state.cached_pdf = None
-            st.session_state.cached_pdf_version_id = None
-            st.session_state.action_notice = (
-                "The view was saved, but the PDF could not be prepared yet. "
-                + str(exc)
-            )
-            st.session_state.action_notice_type = "error"
-
+        st.session_state.action_notice_type = "success" if ok else "error"
     elif action == "email":
         ok, message = send_results_email(index_data, current_version)
         st.session_state.action_notice = message
@@ -1687,19 +1950,6 @@ def perform_custom_action(index_data: pd.DataFrame, current_version: dict[str, A
 
 
 def render_custom_follow_up(index_data: pd.DataFrame, current_version: dict[str, Any]) -> None:
-    in_progress = (
-        st.session_state.action_in_progress in {"save", "email"}
-        and st.session_state.action_version_id == current_version["id"]
-    )
-
-    if in_progress:
-        progress_label = (
-            "Saving your view..."
-            if st.session_state.action_in_progress == "save"
-            else "Emailing your results..."
-        )
-        render_action_progress(progress_label)
-
     with st.container(key="custom_actions"):
         if st.session_state.logging_notice:
             st.markdown(
@@ -1713,47 +1963,19 @@ def render_custom_follow_up(index_data: pd.DataFrame, current_version: dict[str,
                 unsafe_allow_html=True,
             )
 
-        left_space, save_col, gap_one, download_col, gap_two, email_col, right_space = st.columns(
-            [2.4, 1.5, 0.5, 1.5, 0.5, 1.5, 2.4],
-            gap="small",
+        left_space, download_col, gap, email_col, right_space = st.columns(
+            [2.8, 1.7, 0.5, 1.7, 2.8], gap="small"
         )
-        del left_space, gap_one, gap_two, right_space
+        del left_space, gap, right_space
 
-        export_versions = report_versions_for_export(current_version)
         cached_pdf_ready = (
             st.session_state.cached_pdf is not None
             and st.session_state.cached_pdf_version_id == current_version["id"]
         )
-
-        with save_col:
-            if in_progress:
-                save_label = "Saved" if current_version["id"] in st.session_state.saved_preview_ids else "Save"
-                st.button(
-                    save_label,
-                    disabled=True,
-                    key=f"processing_save_{current_version['id']}",
-                    width="stretch",
-                )
-            elif current_version["id"] in st.session_state.saved_preview_ids:
-                st.button("Saved", disabled=True, key=f"saved_{current_version['id']}", width="stretch")
-            elif st.button("Save", key=f"save_{current_version['id']}", width="stretch"):
-                if st.session_state.profile_complete:
-                    begin_custom_action("save", current_version)
-                else:
-                    st.session_state.action_notice = None
-                    st.session_state.gate_action = "save"
-                    st.session_state.gate_version_id = current_version["id"]
-                st.rerun()
+        download_authorised = st.session_state.download_authorised_version_id == current_version["id"]
 
         with download_col:
-            if in_progress:
-                st.button(
-                    "Download PDF",
-                    disabled=True,
-                    key=f"processing_download_{current_version['id']}",
-                    width="stretch",
-                )
-            elif st.session_state.profile_complete and export_versions and cached_pdf_ready:
+            if download_authorised and cached_pdf_ready:
                 st.download_button(
                     "Download PDF",
                     data=st.session_state.cached_pdf,
@@ -1764,39 +1986,20 @@ def render_custom_follow_up(index_data: pd.DataFrame, current_version: dict[str,
                     width="stretch",
                 )
             elif st.button("Download PDF", key=f"gate_download_{current_version['id']}", width="stretch"):
-                if not export_versions:
-                    st.session_state.action_notice = "Save this customised view before downloading the PDF."
-                    st.session_state.action_notice_type = "warning"
-                elif not cached_pdf_ready:
-                    begin_custom_action("save", current_version)
-                else:
-                    st.session_state.action_notice = None
-                    st.session_state.gate_action = "download"
-                    st.session_state.gate_version_id = current_version["id"]
+                st.session_state.action_notice = None
+                st.session_state.gate_action = "download"
+                st.session_state.gate_version_id = current_version["id"]
+                st.session_state.gate_processing = False
                 st.rerun()
 
         with email_col:
-            if in_progress:
-                st.button(
-                    "Email results",
-                    disabled=True,
-                    key=f"processing_email_{current_version['id']}",
-                    width="stretch",
-                )
-            elif st.button("Email results", key=f"email_{current_version['id']}", width="stretch"):
-                if not export_versions:
-                    st.session_state.action_notice = "Save this customised view before emailing results."
-                    st.session_state.action_notice_type = "warning"
-                elif st.session_state.profile_complete:
-                    begin_custom_action("email", current_version)
-                else:
-                    st.session_state.action_notice = None
-                    st.session_state.gate_action = "email"
-                    st.session_state.gate_version_id = current_version["id"]
+            if st.button("Email results", key=f"email_{current_version['id']}", width="stretch"):
+                st.session_state.action_notice = None
+                st.session_state.gate_action = "email"
+                st.session_state.gate_version_id = current_version["id"]
+                st.session_state.gate_processing = False
                 st.rerun()
 
-    if in_progress:
-        perform_custom_action(index_data, current_version)
 
 
 def valid_email(value: str) -> bool:
@@ -1837,119 +2040,148 @@ def lookup_preview(preview_id: str | None) -> dict[str, Any] | None:
         return None
     return next((preview for preview in st.session_state.previews if preview["id"] == preview_id), None)
 
+
+def log_profile_details(reason: str) -> tuple[bool, str]:
+    contact = st.session_state.contact
+    return post_backend(
+        "log_profile",
+        {
+            "session_id": st.session_state.session_id,
+            "captured_at": singapore_now(),
+            "name": contact.get("name", ""),
+            "organisation": contact.get("organisation", ""),
+            "email": contact.get("email", ""),
+            "reason": reason,
+            "industry": st.session_state.profile_industry,
+            "role": st.session_state.profile_role,
+            "started_at": st.session_state.session_started_at,
+        },
+        timeout=12,
+    )
+
+
 @st.dialog("A small request", width="small")
-def research_gate_dialog(index_data: pd.DataFrame) -> None:
-    action = st.session_state.gate_action
+def download_gate_dialog(index_data: pd.DataFrame) -> None:
     current_version = lookup_preview(st.session_state.gate_version_id) or resolve_custom_version()
+    if current_version is None:
+        st.error("No customised view is available for this action.")
+        return
 
     if st.session_state.gate_processing:
-        progress_copy = {
-            "save": "Preparing your customised readiness index...",
-            "download": "Saving your details and preparing your download...",
-            "email": "Saving your details and preparing your email...",
-        }.get(action, "Saving your details...")
         st.markdown(
-            (
-                '<div class="gate-progress-wrap">'
-                '<div class="gate-progress-spinner" aria-hidden="true"></div>'
-                f'<div>{html.escape(progress_copy)}</div>'
-                '</div>'
-            ),
+            '<div class="gate-inline-progress"><div class="gate-progress-spinner" aria-hidden="true"></div><div>Generating your customised PDF</div></div>',
             unsafe_allow_html=True,
         )
         time.sleep(0.18)
-
         if st.session_state.profile_capture_pending:
-            contact = st.session_state.contact
-            profile_ok, profile_message = post_backend(
-                "log_profile",
-                {
-                    "session_id": st.session_state.session_id,
-                    "captured_at": singapore_now(),
-                    "name": contact["name"],
-                    "organisation": contact["organisation"],
-                    "email": contact["email"],
-                    "reason": st.session_state.profile_capture_reason or action,
-                    "industry": st.session_state.profile_industry,
-                    "role": st.session_state.profile_role,
-                    "started_at": st.session_state.session_started_at,
-                },
-                timeout=12,
-            )
-            st.session_state.session_logged = st.session_state.session_logged or profile_ok
-            st.session_state.logging_notice = None if profile_ok else (
-                "Your details were saved for this session, but database logging did not complete. "
-                + profile_message
-            )
+            ok, message = log_profile_details("download")
+            st.session_state.session_logged = st.session_state.session_logged or ok
+            st.session_state.logging_notice = None if ok else "Your PDF can continue, but Google Sheets logging did not complete. " + message
             st.session_state.profile_capture_pending = False
-            st.session_state.profile_capture_reason = None
 
+        ok, message = prepare_pdf(index_data, current_version)
         st.session_state.gate_processing = False
         st.session_state.gate_action = None
         st.session_state.gate_version_id = None
-
-        if current_version is None:
-            st.session_state.action_notice = "No customised view is available for this action."
-            st.session_state.action_notice_type = "error"
-            st.rerun()
-
-        if action == "save":
-            begin_custom_action("save", current_version)
-        elif action == "email":
-            begin_custom_action("email", current_version)
-        elif action == "download":
-            st.session_state.action_notice = "Thanks! Please click Download PDF to continue."
+        if ok:
+            st.session_state.download_authorised_version_id = current_version["id"]
+            st.session_state.action_notice = "Your PDF is ready. Click Download PDF to save it."
             st.session_state.action_notice_type = "success"
+        else:
+            st.session_state.action_notice = message
+            st.session_state.action_notice_type = "error"
         st.rerun()
 
-    action_copy = {
-        "save": "Please provide your details to save your priority-adjusted view",
-        "download": "Please provide your details to download your results as a PDF",
-        "email": "Please provide your details to email the results to yourself",
-    }.get(action, "Please provide your details to continue")
-
-    st.markdown(f'<div class="gate-copy">{action_copy}</div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="gate-copy">This helps us understand how different market participants use the index.</div>',
+        '<div class="gate-copy">Please share your details as it helps us understand which market participants use the index.</div>',
+        unsafe_allow_html=True,
+    )
+    contact = st.session_state.contact
+    name = st.text_input("Name (optional)", value=contact.get("name", ""), key="download_name")
+    organisation = st.text_input("Organisation (optional)", value=contact.get("organisation", ""), key="download_organisation")
+    email = st.text_input("Email (optional)", value=contact.get("email", ""), key="download_email")
+    st.markdown(
+        '<div class="gate-fine-print">Details are used only for the stated research purpose and to fulfil requested services. They are not used for marketing.</div>',
         unsafe_allow_html=True,
     )
 
-    if not st.session_state.profile_complete:
-        contact = st.session_state.contact
-        with st.form("research_profile_form"):
-            name = st.text_input("Name", value=contact.get("name", ""))
-            organisation = st.text_input("Organisation", value=contact.get("organisation", ""))
-            email = st.text_input("Email", value=contact.get("email", ""))
-            st.markdown(
-                '<div class="gate-fine-print">Your details will be used only to extend this research and to fulfil your request. They will not be used for marketing or shared with third parties.</div>',
-                unsafe_allow_html=True,
-            )
-            submitted = st.form_submit_button("Continue")
+    left, centre, right = st.columns([1.5, 2.0, 1.5])
+    del left, right
+    with centre:
+        with st.container(key="gate_primary_button"):
+            share = st.button("OK", key="download_share", width="stretch")
+    with st.container(key="gate_decline_button"):
+        decline = st.button("No thanks, I just want the PDF", key="download_decline", type="tertiary", width="stretch")
 
-        if not submitted:
+    if share:
+        if not any([name.strip(), organisation.strip(), email.strip()]):
+            st.error("Enter at least one detail, or select No thanks, I just want the PDF.")
             return
-        if not name.strip() or not organisation.strip() or not valid_email(email):
-            st.error("Complete all fields / Enter a valid email address")
+        if email.strip() and not valid_email(email):
+            st.error("Enter a valid email address or leave the email field blank.")
             return
-
-        st.session_state.contact = {
-            "name": name.strip(),
-            "organisation": organisation.strip(),
-            "email": email.strip(),
-        }
-        st.session_state.profile_complete = True
+        st.session_state.contact = {"name":name.strip(), "organisation":organisation.strip(), "email":email.strip()}
+        st.session_state.profile_complete = bool(email.strip() and valid_email(email))
         st.session_state.profile_capture_pending = True
-        st.session_state.profile_capture_reason = action
         st.session_state.gate_processing = True
         st.rerun()
 
+    if decline:
+        st.session_state.profile_capture_pending = False
+        st.session_state.gate_processing = True
+        st.rerun()
+
+
+@st.dialog("Please enter your details", width="small")
+def email_gate_dialog(index_data: pd.DataFrame) -> None:
+    current_version = lookup_preview(st.session_state.gate_version_id) or resolve_custom_version()
     if current_version is None:
-        st.error("No customised view is available for this action")
+        st.error("No customised view is available for this action.")
         return
 
-    # This path is used only if the profile was already completed before the dialog opened.
-    st.session_state.gate_processing = True
-    st.rerun()
+    if st.session_state.gate_processing:
+        st.markdown(
+            '<div class="gate-inline-progress"><div class="gate-progress-spinner" aria-hidden="true"></div><div>Sending…</div></div>',
+            unsafe_allow_html=True,
+        )
+        time.sleep(0.18)
+        profile_ok, profile_message = log_profile_details("email")
+        st.session_state.session_logged = st.session_state.session_logged or profile_ok
+        st.session_state.logging_notice = None if profile_ok else "Your email can continue, but Google Sheets logging did not complete. " + profile_message
+        ok, message = send_results_email(index_data, current_version)
+        st.session_state.gate_processing = False
+        st.session_state.gate_action = None
+        st.session_state.gate_version_id = None
+        st.session_state.action_notice = message
+        st.session_state.action_notice_type = "success" if ok else "error"
+        st.rerun()
+
+    contact = st.session_state.contact
+    name = st.text_input("Name", value=contact.get("name", ""), key="email_name")
+    organisation = st.text_input("Organisation (optional)", value=contact.get("organisation", ""), key="email_organisation")
+    email = st.text_input("Email", value=contact.get("email", ""), key="email_address")
+    st.markdown(
+        '<div class="gate-fine-print">Your details are used only to fulfil this request and support the stated research purpose. They are not used for marketing.</div>',
+        unsafe_allow_html=True,
+    )
+    left, centre, right = st.columns([1.5, 2.0, 1.5])
+    del left, right
+    with centre:
+        with st.container(key="gate_primary_button"):
+            submitted = st.button("Submit", key="email_submit", width="stretch")
+
+    if submitted:
+        if not name.strip():
+            st.error("Enter your name.")
+            return
+        if not valid_email(email):
+            st.error("Enter a valid email address.")
+            return
+        st.session_state.contact = {"name":name.strip(), "organisation":organisation.strip(), "email":email.strip()}
+        st.session_state.profile_complete = True
+        st.session_state.gate_processing = True
+        st.rerun()
+
 
 
 def render_overall(index_data: pd.DataFrame) -> None:
@@ -1957,16 +2189,199 @@ def render_overall(index_data: pd.DataFrame) -> None:
     results = custom_version["results"] if custom_version else base_results(index_data)
     display_results(index_data, results, view="overall", custom_version=custom_version)
 
-def render_market(index_data: pd.DataFrame, overlay_data: pd.DataFrame) -> None:
+
+def render_market_driver_table(drivers: pd.DataFrame) -> None:
+    """Render the public-facing quarterly evidence-driver table."""
+    if drivers.empty:
+        st.info("No market-confidence drivers are available for this period.")
+        return
+
+    ordered = (
+        drivers.sort_values("Display order")
+        if "Display order" in drivers.columns
+        else drivers.copy()
+    )
+
+    rows: list[str] = []
+    for _, row in ordered.iterrows():
+        confidence_effect = row.get(
+            "Effect on market confidence",
+            row.get("Overlay treatment", row.get("Confidence direction", "")),
+        )
+        readiness_factor = row.get(
+            "Readiness factor affected",
+            row.get("Mapped indicator", row.get("Index area affected", "")),
+        )
+
+        rows.append(
+            "<tr>"
+            f"<td><strong>{html.escape(str(row.get('Evidence signal', '')))}</strong></td>"
+            f"<td class='market-confidence-effect'>{html.escape(str(confidence_effect))}</td>"
+            f"<td>{html.escape(str(row.get('Why this matters', row.get('Why it mattered', ''))))}</td>"
+            f"<td>{html.escape(str(readiness_factor))}</td>"
+            "</tr>"
+        )
+
+    st.markdown(
+        """
+        <table class="market-driver-table">
+          <colgroup>
+            <col style="width:22%;">
+            <col style="width:26%;">
+            <col style="width:30%;">
+            <col style="width:22%;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Evidence signal</th>
+              <th>Effect on market confidence</th>
+              <th>Why this matters</th>
+              <th>Readiness factor affected</th>
+            </tr>
+          </thead>
+          <tbody>
+        """
+        + "".join(rows)
+        + """
+          </tbody>
+        </table>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_market_developments(developments: pd.DataFrame) -> None:
+    """Render one representative source link per clustered evidence event, using workbook URLs."""
+    cards: list[str] = []
+
+    def clean_text(value: Any) -> str:
+        if value is None or pd.isna(value):
+            return ""
+        rendered = str(value).strip()
+        return "" if rendered.lower() in {"none", "nan", "nat"} else rendered
+
+    ordered = (
+        developments.sort_values("Display order")
+        if "Display order" in developments.columns
+        else developments.copy()
+    )
+
+    for _, row in ordered.iterrows():
+        source = clean_text(row.get("Source", ""))
+        date = clean_text(row.get("Publication date", ""))
+        region = clean_text(row.get("Country or region", ""))
+
+        source_url = clean_text(row.get("Source URL", ""))
+
+        if source_url and source:
+            source_html = (
+                f'<a href="{html.escape(source_url, quote=True)}" '
+                'target="_blank" rel="noopener noreferrer">'
+                f'{html.escape(source)}</a>'
+            )
+        else:
+            source_html = html.escape(source)
+
+        meta_parts = [part for part in [source_html, html.escape(date), html.escape(region)] if part]
+        meta_html = " • ".join(meta_parts)
+
+        direction = clean_text(
+            row.get(
+                "Effect on market confidence",
+                row.get("Confidence direction", ""),
+            )
+        )
+
+        direction_key = direction.casefold()
+        if "reducing" in direction_key:
+            signal_icon = "↓"
+        elif "enhancing" in direction_key:
+            signal_icon = "↑"
+        elif "mixed" in direction_key:
+            signal_icon = "↔"
+        else:
+            signal_icon = "•"
+
+        cards.append(
+            "<div class='market-development-card'>"
+            f"<div class='market-development-title'>{html.escape(clean_text(row.get('Development', '')))}</div>"
+            f"<div class='market-development-meta'>{meta_html}</div>"
+            f"<div class='market-development-summary'>{html.escape(clean_text(row.get('Evidence summary', '')))}</div>"
+            f"<div class='market-development-signal'>"
+            f"<span class='market-development-signal-icon' aria-hidden='true'>{signal_icon}</span>"
+            f"<span>{html.escape(direction)} signal</span>"
+            "</div></div>"
+        )
+
+    st.markdown(
+        "<div class='market-development-grid'>" + "".join(cards) + "</div>",
+        unsafe_allow_html=True,
+    )
+
+
+def render_market(
+    index_data: pd.DataFrame,
+    overlay_data: pd.DataFrame,
+    market_drivers: pd.DataFrame,
+    market_context: pd.DataFrame,
+    market_developments: pd.DataFrame,
+) -> None:
     period = query_value("period", "q1")
     if period not in {"q1", "q2"}:
         period = "q1"
-    display_results(
-        index_data,
-        market_results(index_data, overlay_data, period),
-        view="market",
-        market_period=period,
-    )
+    quarter = "Q1 2026" if period == "q1" else "Q2 2026"
+    results = market_results(index_data, overlay_data, period)
+
+    with st.container(key="ranking_section"):
+        render_top_navigation("market", period)
+        render_ranking_chart_fragment(
+            results=results,
+            view="market",
+            mode="market",
+            custom_id=None,
+            market_period=period,
+        )
+
+    current_drivers = market_drivers[market_drivers["Quarter"].astype(str) == quarter].copy()
+    current_context = market_context[market_context["Quarter"].astype(str) == quarter].copy()
+    current_developments = market_developments[market_developments["Quarter"].astype(str) == quarter].copy()
+
+    st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+    with st.container(key="market_drivers_section"):
+        st.markdown(
+            f'<div class="section-title">What drove {quarter}’s adjustment</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            f'<div class="market-intro">The {quarter} evidence shows which market signals strengthened, weakened or produced mixed confidence, why they mattered, and the readiness factors they concerned. Country-level score and rank effects still depend on each jurisdiction’s underlying performance on those factors.</div>',
+            unsafe_allow_html=True,
+        )
+        render_market_driver_table(current_drivers)
+        if not current_context.empty:
+            items = "".join(
+                f"<li><strong>{html.escape(str(row['Evidence signal']))}</strong> — {html.escape(str(row['Why it was not scored directly']))}</li>"
+                for _, row in current_context.sort_values("Display order").iterrows()
+            )
+            st.markdown(
+                '<div class="market-context-copy assessment-copy">'
+                '<div class="market-context-heading">Important evidence not directly scored</div>'
+                '<p>These signals were retained as contextual findings because the final index does not contain a sufficiently direct national indicator.</p>'
+                f'<ul class="market-context-list">{items}</ul>'
+                '</div>',
+                unsafe_allow_html=True,
+            )
+
+    st.markdown('<div class="section-gap"></div>', unsafe_allow_html=True)
+    with st.container(key="market_developments_section"):
+        st.markdown(
+            f'<div class="section-title">Key developments scored in {quarter}</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            '<div class="market-intro">Representative evidence events are shown below. The arrow summarises the overall direction of each development; mixed means the same event contained both confidence-enhancing and confidence-reducing implications. Duplicate and syndicated reporting was clustered so repeated coverage did not count as separate market signals.</div>',
+            unsafe_allow_html=True,
+        )
+        render_market_developments(current_developments)
 
 
 def process_priority_submission(index_data: pd.DataFrame, submission: dict[str, Any]) -> None:
@@ -1992,13 +2407,20 @@ def process_priority_submission(index_data: pd.DataFrame, submission: dict[str, 
         "results": results,
     }
     st.session_state.previews = [version]
+    st.session_state.saved_preview_ids = [preview_id]
     st.session_state.current_preview_id = preview_id
+    st.session_state.download_authorised_version_id = None
+    st.session_state.cached_pdf = None
+    st.session_state.cached_pdf_version_id = None
 
     rankings_payload = [
         {
+            "Country": str(row["Country"]),
             "ISO3": str(row["ISO3"]),
-            "Rank": int(row["Rank"]),
-            "Overall score": round(float(row["Overall score"]), 6),
+            "Base rank": int(row["Base rank"]),
+            "Base score": round(float(row["Base score"]), 6),
+            "Adjusted rank": int(row["Rank"]),
+            "Adjusted score": round(float(row["Overall score"]), 6),
             "Rank change": int(row["Rank change"]),
         }
         for _, row in results.sort_values("Rank").iterrows()
@@ -2016,9 +2438,20 @@ def process_priority_submission(index_data: pd.DataFrame, submission: dict[str, 
                 "session_id": st.session_state.session_id,
                 "version": 1,
                 "submitted_at": submitted_at,
-                "survey_responses": {"industry": industry, "role": role, **responses},
-                "adjusted_weights": {PILLAR_SHORT[i]: weights[i] for i in range(6)},
-                "resulting_rankings": rankings_payload,
+                "industry": industry,
+                "role": role,
+                "survey_responses": responses,
+                "survey_labels": {item["key"]: item["label"] for item in SURVEY_ITEMS},
+                "weights": [
+                    {
+                        "pillar_number": i + 1,
+                        "pillar": PILLAR_SHORT[i],
+                        "base_weight": BASE_WEIGHTS[i],
+                        "adjusted_weight": weights[i],
+                    }
+                    for i in range(6)
+                ],
+                "rankings": rankings_payload,
             },
         },
         timeout=15,
@@ -2120,67 +2553,197 @@ def render_priorities(index_data: pd.DataFrame) -> None:
             process_priority_submission(index_data, submission)
 
 
-def render_methodology() -> None:
+
+def validation_secret() -> str:
+    try:
+        return str(st.secrets.get("validation_access_code", "")).strip()
+    except Exception:
+        return ""
+
+
+def validation_assignment(participant_code: str) -> list[dict[str, Any]]:
+    """Assign complete three-item construct blocks once the final bank is populated."""
+    if not VALIDATION_QUESTION_BANK:
+        return []
+
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for item in VALIDATION_QUESTION_BANK:
+        grouped.setdefault(str(item["construct_id"]), []).append(item)
+
+    construct_ids = sorted(grouped)
+    rng = random.Random(participant_code)
+    rng.shuffle(construct_ids)
+    selected_ids = construct_ids[: min(VALIDATION_CONSTRUCTS_PER_PARTICIPANT, len(construct_ids))]
+    return [item for construct_id in selected_ids for item in grouped[construct_id]]
+
+
+def register_validation_participant(industry: str, role: str, experience: str) -> tuple[bool, str]:
+    return post_backend(
+        "log_validation_participant",
+        {
+            "participant_code": st.session_state.validation_participant_code,
+            "registered_at": singapore_now(),
+            "industry": industry,
+            "role": role,
+            "experience": experience,
+            "consent": "Yes",
+        },
+        timeout=12,
+    )
+
+
+def submit_validation_responses(responses: list[dict[str, Any]]) -> tuple[bool, str]:
+    return post_backend(
+        "log_validation_responses",
+        {
+            "participant_code": st.session_state.validation_participant_code,
+            "submitted_at": singapore_now(),
+            "responses": responses,
+        },
+        timeout=15,
+    )
+
+
+def render_validation() -> None:
     with st.container(key="methodology_section"):
-        render_top_navigation("methodology")
-        st.markdown('<div class="section-title">Methodology</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-title">Academic Validation Survey</div>', unsafe_allow_html=True)
         st.markdown(
             """
-            <div class="methodology-copy">
-              <div class="methodology-subhead">Purpose and scope</div>
-              <p>The Coal-to-Clean Transition Jurisdiction Readiness Index is designed as an initial screening tool for identifying jurisdictions with relatively favourable conditions for credible coal-transition opportunities. It does not assess individual power plants or predict whether a specific transaction will succeed. Instead, it compares the national-level energy, policy, institutional, carbon-market, financial and social conditions that could enable or constrain project development.</p>
-              <p>The index uses the latest sufficiently comparable public data available, generally representing 2024 or 2025 conditions. Recent market developments are incorporated separately through quarterly market-salience overlays for Q1 and Q2 2026. This separates relatively structural country readiness from faster-moving changes in market priorities.</p>
-
-              <div class="methodology-subhead">Country universe and materiality screening</div>
-              <p>The index's universe comprises jurisdictions with operating coal-fired power generation capacity recorded in Global Energy Monitor’s January 2026 Global Coal Plant Tracker. Jurisdictions without recorded operating coal capacity were excluded because they fall outside the intended coal-transition opportunity set.</p>
-              <p>A central materiality screen was then applied using three dimensions: operating coal capacity, coal dependence in the electricity mix and estimated lifetime emissions associated with the operating fleet. A jurisdiction passed the central screen where it met at least two of the three median-based thresholds. This produced a final comparative universe of 36 jurisdictions.</p>
-              <p>The screen measures the materiality of the coal-transition opportunity rather than readiness. Coal capacity was therefore not rewarded again within the readiness score, avoiding double counting between opportunity scale and enabling conditions.</p>
-
-              <div class="methodology-subhead">Index structure</div>
-              <p>The index comprises six pillars:</p>
-              <ul>
-                <li>Energy system readiness</li>
-                <li>Policy and transition commitment</li>
-                <li>Governance and institutional capacity</li>
-                <li>Carbon market maturity</li>
-                <li>Financial and market viability</li>
-                <li>Just transition and social credibility</li>
-              </ul>
-              <p>The indicators combine current conditions with recent trajectory measures. Current-condition indicators capture relatively structural characteristics, such as renewable electricity penetration, governance quality and carbon-market experience. Trajectory indicators capture the direction of change, including recent trends in coal share, renewable electricity and grid emissions intensity.</p>
-              <p>Indicators were selected according to six principles: relevance to coal-transition execution; coverage across the eligible country universe; comparability between jurisdictions; limited conceptual overlap; data quality and institutional credibility; and reproducibility using publicly available information. Where two indicators appeared to measure substantially the same underlying condition, one was removed, archived or assigned no weight.</p>
-              <p>A detailed indicator register, including definitions, data years, sources and scoring treatment, is provided in the appendix and supporting workbooks.</p>
-
-              <div class="methodology-subhead">Data treatment and scoring</div>
-              <p>Raw indicators were first aligned so that higher values consistently represented stronger readiness. Measures of risk or transition pressure, such as coal construction, inflation or exchange-rate instability, were reverse-scored.</p>
-              <p>Indicators were converted to a common 0–100 scale. Percentile bounds were used where necessary to reduce the influence of extreme outliers, while logarithmic transformation was applied to highly skewed carbon-market activity measures such as project counts, credit issuance and retirements. Country scores were then aggregated into pillar scores and an overall index score.</p>
-              <p>Missing observations were not automatically treated as zero. Where defensible estimates were required, they were produced using documented comparator or secondary-source evidence and explicitly flagged. The sensitivity testing assessed whether these estimates materially affected the results.</p>
-
-              <div class="methodology-subhead">Pillar weights</div>
-              <p>The six pillars were assigned overall weights of 20% for energy-system readiness, 20% for policy and transition commitment, 15% for governance and institutional capacity, 20% for carbon-market maturity, 15% for financial and market viability and 10% for just-transition and social credibility. The weights reflect their relative relevance to coal-transition execution, the strength of the available cross-country evidence and the need to avoid duplicating similar risks across pillars.</p>
-
-              <div class="methodology-subhead">Indicator weights</div>
-              <p>Indicators within each pillar were weighted according to their direct relationship with the pillar’s due-diligence question, data quality and distinctiveness from other measures. Detailed indicator weights are retained in the analytical model rather than reproduced in the report. Alternative weighting scenarios were tested to determine whether the final rankings depended excessively on the selected configuration.</p>
-
-              <div class="methodology-subhead">Market-salience overlay</div>
-              <p>The quarterly overlay assesses which readiness factors were receiving increased attention from investors, buyers, policymakers and other market participants during Q1 and Q2 2026. It does not assign positive or negative media scores to individual countries. Instead, it changes the relative emphasis placed on existing indicators, with the same adjusted weights applied across all jurisdictions.</p>
-              <p>Nexis was used as the main systematic discovery corpus, supported by targeted Google searches for primary-source verification. A pilot collection from QCIntel was excluded from the formal quarterly comparison because comparable access could not be completed after the subscription ended earlier than expected.</p>
-              <p>Duplicate reporting of the same development was clustered as one evidence event. Each event could support more than one construct where it contained genuinely distinct claims. Evidence was assessed according to its relevance to coal transition, evidence type, strength and source independence. Construct-level evidence was converted into multipliers of 1.00, 1.05, 1.10 or 1.20.</p>
-              <p>Each scored construct was assigned to its closest primary index indicator. Cross-cutting or project-specific issues without a sufficiently direct country-level indicator were retained as contextual findings rather than forced into the scoring model. Adjusted indicator weights were renormalised to 100% before calculating Q1 and Q2 overlay scores.</p>
-
-              <div class="methodology-subhead">Validation and sensitivity testing</div>
-              <p>The index was tested under alternative pillar and indicator weighting scenarios. Rank correlations across these scenarios ranged from approximately 0.93 to 0.99, indicating that the broad ranking pattern was stable. The maximum observed inter-pillar correlation was 0.764, below the 0.800 threshold used to flag potentially excessive overlap.</p>
-              <p>The market overlays produced similarly limited changes. Spearman rank correlations between the base index and the Q1 and Q2 results were approximately 0.998, and no jurisdiction moved by more than two ranking positions. The overlay therefore adds current market context without overturning the structural findings of the base index.</p>
-
-              <div class="methodology-subhead">AI-assisted analysis and quality control</div>
-              <p>Generative AI was used to support data extraction, evidence coding, formula development, consistency checks and iterative analytical testing. The researcher designed and refined the prompts, defined the classification framework, reviewed source documents, corrected coding decisions and retained responsibility for the final methodology and interpretation. AI outputs were treated as provisional until checked against the underlying data or evidence source.</p>
-
-              <div class="methodology-subhead">Limitations</div>
-              <p>The index is a national-level screening tool, whereas coal-transition transactions ultimately depend on plant-level economics, ownership, contracts, grid access and community consent. Some international datasets are published with a time lag, and English-language source availability is uneven across jurisdictions.</p>
-              <p>Several relevant issues could not be measured consistently, including plant-specific community support, grid-connection constraints and transaction-level bankability. These are identified as areas for subsequent project due diligence rather than represented through weak or inconsistent proxies. The results should therefore support prioritisation and comparison, not be interpreted as investment, legal or carbon-credit integrity advice.</p>
+            <div class="validation-shell">
+              <p>This restricted survey is designed to test whether the market constructs identified through quarterly evidence coding are important, correctly interpreted and appropriately mapped to the readiness index.</p>
+              <p class="validation-note">It is separate from the public Add Your Priorities tool. Responses will support validation and separately labelled sensitivity analysis; they will not silently rewrite a published overlay.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
+        expected_access_code = validation_secret()
+        if not expected_access_code:
+            st.warning(
+                "The private validation page is disabled until validation_access_code is added to Streamlit Secrets."
+            )
+            return
+
+        if not st.session_state.validation_access_granted:
+            with st.form("validation_access_form"):
+                supplied_code = st.text_input("Access code", type="password")
+                unlocked = st.form_submit_button("Open validation survey")
+            if unlocked:
+                if supplied_code.strip() == expected_access_code:
+                    st.session_state.validation_access_granted = True
+                    st.rerun()
+                else:
+                    st.error("That access code is not recognised.")
+            return
+
+        st.markdown(
+            f'<div class="validation-access-card"><strong>Participant code</strong><br><span class="validation-code">{html.escape(st.session_state.validation_participant_code)}</span></div>',
+            unsafe_allow_html=True,
+        )
+
+        if not st.session_state.validation_registered:
+            industries = sorted((name for name in INDUSTRY_MULTIPLIERS if name != "Other"), key=str.casefold)
+            with st.form("validation_registration_form"):
+                st.markdown(
+                    """
+                    <div class="validation-consent-card">
+                      <strong>Consent</strong>
+                      <p>Participation is voluntary. Responses will be analysed in aggregate for research and methodology validation. Do not enter confidential or commercially sensitive information. You may stop before submitting your answers.</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+                consent = st.checkbox("I have read the information above and agree to participate.")
+                industry = st.selectbox("Industry", [*industries, "Other"])
+                role = st.selectbox("Market actor role", ROLE_OPTIONS)
+                experience = st.selectbox(
+                    "Relevant experience",
+                    ["Less than 2 years", "2–5 years", "6–10 years", "More than 10 years"],
+                )
+                begin = st.form_submit_button("Begin validation")
+
+            if begin:
+                if not consent:
+                    st.error("Confirm consent before continuing.")
+                    return
+                ok, message = register_validation_participant(industry, role, experience)
+                if not ok:
+                    st.error("Registration was not logged. " + message)
+                    return
+                st.session_state.validation_registered = True
+                st.session_state.validation_assignment = validation_assignment(
+                    st.session_state.validation_participant_code
+                )
+                st.rerun()
+            return
+
+        assigned = st.session_state.validation_assignment
+        if not assigned:
+            st.info(
+                "The private survey shell is ready. Final constructs and three-item question blocks will be inserted after evidence recoding and construct mapping are frozen."
+            )
+            st.markdown(
+                """
+                <div class="validation-question-card">
+                  <div class="validation-question-label">Planned survey design</div>
+                  <div class="validation-question-description">Each participant will receive a randomised subset of complete construct blocks. Each selected construct can contain three short Likert items, avoiding an 84-slider questionnaire while preserving multi-item validation across the full sample.</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+            return
+
+        response_rows: list[dict[str, Any]] = []
+        with st.form("validation_questions_form"):
+            for item in assigned:
+                st.markdown(
+                    (
+                        '<div class="validation-question-card">'
+                        f'<div class="validation-question-label">{html.escape(str(item["question"]))}</div>'
+                        f'<div class="validation-question-description">{html.escape(str(item.get("description", "")))}</div>'
+                        '</div>'
+                    ),
+                    unsafe_allow_html=True,
+                )
+                response = st.radio(
+                    str(item["question"]),
+                    options=list(VALIDATION_SCALE),
+                    format_func=lambda value: f"{value} — {VALIDATION_SCALE[value]}",
+                    horizontal=True,
+                    index=None,
+                    key=f'validation_{item["question_id"]}',
+                    label_visibility="collapsed",
+                )
+                response_rows.append(
+                    {
+                        "construct_id": item["construct_id"],
+                        "construct": item["construct"],
+                        "question_id": item["question_id"],
+                        "question": item["question"],
+                        "response": response,
+                    }
+                )
+            submitted = st.form_submit_button("Submit validation responses")
+
+        if submitted:
+            if any(row["response"] is None for row in response_rows):
+                st.error("Answer every displayed question before submitting.")
+                return
+            ok, message = submit_validation_responses(response_rows)
+            if ok:
+                st.success("Thank you. Your validation responses have been recorded.")
+            else:
+                st.error("The responses were not logged. " + message)
+
+
+
+METHODOLOGY_CONTENT = '\n<div class="methodology-copy">\n  <div class="methodology-subhead">Purpose and scope</div>\n  <p>The Coal-to-Clean Transition Jurisdiction Readiness Index is an initial screening tool for identifying jurisdictions with comparatively favourable conditions for credible coal-transition opportunities. It does not assess individual power plants or predict whether a specific transaction will succeed. Instead, it compares national-level energy, policy, institutional, carbon-market, financial and social conditions that could enable or constrain project development.</p>\n  <p>A market-confidence overlay supplements the structural index with quarterly evidence on changing investor, buyer, policy and implementation priorities. The overlay shows how recent market developments could alter the relative importance of existing readiness factors. It does not replace the structural base score.</p>\n  <p>Scores are comparative measures within the screened jurisdiction universe. They are not probabilities of project success and should not be interpreted as investment, legal or carbon-credit integrity advice.</p>\n\n  <div class="methodology-subhead">TRACTION and energy transition credits</div>\n  <p>The immediate conceptual starting point for this research was the Monetary Authority of Singapore-convened <a href="https://www.mas.gov.sg/development/sustainable-finance/transition-credits" target="_blank" rel="noopener noreferrer">Transition Credits Coalition (TRACTION)</a>. TRACTION was established to examine how carbon markets could complement existing financing mechanisms and accelerate Asia’s shift from coal-fired power to cleaner electricity while safeguarding energy reliability, affordability and access.</p>\n  <p>TRACTION proposed energy transition credits – carbon credits generated from verified emissions reductions achieved by retiring a coal-fired power plant earlier than its credible baseline retirement date, and replacing the lost generation with clean energy. The expected credit revenue can help bridge the financial gap created by foregone plant revenues, debt and contract obligations, renewable replacement costs, decommissioning and a Just Transition. Transition credits are therefore intended as one component of a wider financing package, not as a substitute for policy reform, power-system planning or conventional capital.</p>\n  <p>In the <a href="https://www.mas.gov.sg/-/media/mas-media-library/development/sustainable-finance/traction-final-report.pdf" target="_blank" rel="noopener noreferrer">TRACTION Final Report</a> released in November 2025, it provides a Selection and Prioritisation Framework that starts with the asset. Its Selection Criteria screen whether a coal-fired power plant can meet core integrity and feasibility requirements, first at a screening stage and then at pre-feasibility. Its Prioritisation Criteria then compare eligible opportunities at two levels. Asset-level criteria consider factors such as potential emissions reductions, job impacts, financial viability and the plant owner’s commitment. Market-level criteria assess four broad areas: dependence on coal; energy markets and policies; renewable-energy replacement prospects; and carbon-credit generation prospects.</p>\n  <p>The Coal-to-Clean Jurisdictional Readiness Index is an independent complement to that framework. It does not reproduce TRACTION’s asset-level eligibility test and cannot determine whether a particular plant can generate transition credits. Instead, it converts the market-level question into a reproducible cross-country screening tool. It separates opportunity materiality from readiness, compares 28 indicators across six pillars, and adds a quarterly market-confidence overlay. For market actors, it can help prioritise where to allocate asset-screening, engagement and due-diligence resources before undertaking the plant-level work recommended by TRACTION and required by formal crediting methodologies.</p>\n\n  <div class="methodology-subhead">Scope of coal use and methodological alignment</div>\n  <p>The index focuses on grid-connected coal-fired electricity generation. This is not a judgement that captive, off-grid or industrial uses of coal are unimportant. Grid-connected coal power provides the clearest basis for a reproducible jurisdictional comparison because plants are discrete, capacity-rated assets; electricity-system data are comparatively available across countries; and retirement can be assessed alongside replacement generation, grid reliability, power-sector policy and just-transition conditions.</p>\n  <p>The <a href="https://globalenergymonitor.org/projects/global-coal-plant-tracker/" target="_blank" rel="noopener noreferrer">Global Coal Plant Tracker</a> includes coal-fired electricity-generating units and separately identifies captive plants. For this index, operating units with a populated <code>Captive</code> field are excluded because GEM uses that field for power stations designated for particular non-grid use. Units without a captive designation are treated as the grid-connected comparison universe for index purposes, subject to manual review where other plant information indicates possible captive or mixed use.</p>\n  <p>This boundary aligns the index with the principal early coal-phaseout crediting methodologies. <a href="https://verra.org/methodologies/vm0052-accelerated-retirement-of-coal-fired-power-plants-using-a-just-transition-v1-0/" target="_blank" rel="noopener noreferrer">Verra VM0052</a> applies to accelerated retirement of grid-connected coal-fired power plants paired with renewable electricity replacement. <a href="https://globalgoals.goldstandard.org/459_paa-m400-05_just-coal-decommissioning/" target="_blank" rel="noopener noreferrer">Gold Standard’s JUST Coal Decommissioning methodology</a> similarly covers grid-connected coal plants and grid-connected renewable replacement.</p>\n  <p>Captive and industrial coal remain important transition challenges, but are not combined with the present index because their energy uses, replacement technologies, grid relationships and transaction structures differ substantially.</p>\n\n  <div class="methodology-subhead">Country universe and materiality screening</div>\n  <p>The index universe comprises jurisdictions with operating grid-connected coal-fired generation capacity recorded in Global Energy Monitor’s January 2026 Global Coal Plant Tracker. Applying the operational rule of Status = operating and a blank Captive field produces an eligible universe of 67 jurisdictions.</p>\n  <p>A central materiality screen is then applied across three dimensions:</p>\n  <ul>\n    <li>Operating grid-connected coal-fired generation capacity</li>\n    <li>Coal dependence within the electricity mix</li>\n    <li>Estimated lifetime emissions from the operating grid-connected coal fleet</li>\n  </ul>\n  <p>A jurisdiction passes where it meets at least two of the three median-based thresholds. Under the revised grid-connected universe, 34 jurisdictions pass the central screen. The screen measures the materiality of the coal-transition opportunity rather than readiness. Coal capacity and coal generation share are therefore not rewarded again within Pillar 1, avoiding double counting between opportunity scale and enabling conditions.</p>\n  \n\n  <div class="methodology-subhead">Index design</div>\n  <p>The index follows the principles set out in the <a href="https://www.oecd.org/en/publications/handbook-on-constructing-composite-indicators-methodology-and-user-guide_9789264043466-en.html" target="_blank" rel="noopener noreferrer">OECD and Joint Research Centre Handbook on Constructing Composite Indicators</a>. The design begins with a clear conceptual framework, selects indicators for relevance and comparability, normalises measures to a common scale, tests alternative weights, examines overlap and reports limitations. The index is intended to structure comparison and initiate deeper analysis, not to replace the underlying evidence or transaction-specific due diligence.</p>\n  <p>The 28 active indicators combine current conditions with recent trajectory measures. Current-condition indicators capture comparatively structural characteristics, such as renewable electricity penetration, governance quality and carbon-market experience. Trajectory indicators capture the direction of change, including recent trends in coal share, renewable electricity share and grid emissions intensity.</p>\n\n  <div class="methodology-subhead">Pillars and indicators</div>\n\n  <div class="pillar-heading">Pillar 1: Energy system conditions</div>\n  <p>This pillar assesses whether a power system already displays characteristics that can support coal replacement without treating coal dependence itself as readiness. For project developers, financiers, buyers and power-sector stakeholders, it provides an initial view of whether clean generation and grid decarbonisation are sufficiently established to support credible replacement planning, and where renewable integration or reliability risks may require deeper due diligence.</p>\n  <p>Operating coal capacity and coal generation share are retained as screening variables rather than scored indicators. This prevents large or highly coal-dependent systems from receiving a higher readiness score simply because the transition opportunity is larger.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Renewable electricity share.</strong> The share of national electricity generation supplied by renewable sources in 2024, measured as a percentage using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember’s Yearly Electricity Data</a>. A higher share indicates a stronger existing clean-generation base and greater operating experience with renewable power.</li>\n    <li><strong>Indicator 2: Wind and solar share.</strong> The combined share of national electricity generation supplied by wind and solar in 2024, measured as a percentage using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember</a>. This focuses on experience integrating variable renewable energy, which is particularly relevant to coal replacement and grid flexibility.</li>\n    <li><strong>Indicator 3: Grid emissions intensity.</strong> Average power-sector emissions in 2024, measured in grams of CO₂-equivalent per kilowatt-hour using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember</a>. Lower emissions intensity indicates a cleaner electricity system and less dependence on high-emitting generation.</li>\n  </ul>\n\n  <div class="pillar-heading">Pillar 2: Policy and transition commitment</div>\n  <p>This pillar examines whether government policy and regulation, coal-development decisions and recent power-sector trends are consistent with a durable transition. Developers, financiers and offtakers need more than an announced target: they need evidence that replacement-power investment is enabled, new coal development is constrained, and policy commitments are being implemented rather than leaving early retirement exposed to reversal, leakage or conflicting expansion plans.</p>\n  <p>Government action is central to the pillar, particularly through renewable-energy regulation, carbon-pricing infrastructure and dated phaseout commitments. It also looks beyond official announcements by using coal-project pipelines, operating-fleet alignment and observed electricity trends to capture the actions of utilities, asset owners and project sponsors. It does not directly score financial institutions’ coal-financing policies, which are not available on a sufficiently consistent cross-country basis.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Renewable energy policy and regulatory readiness.</strong> The country’s 2023 renewable-energy policy score from the World Bank’s <a href="https://www.worldbank.org/en/topic/energy/publication/rise---regulatory-indicators-for-sustainable-energy" target="_blank" rel="noopener noreferrer">Regulatory Indicators for Sustainable Energy</a>, expressed on a 0–100 scale. It reflects whether the policy and regulatory environment supports renewable deployment and investment.</li>\n    <li><strong>Indicator 2: Coal expansion pressure.</strong> The ratio of announced, pre-permit and permitted grid-connected coal capacity to operating grid-connected coal capacity in January 2026, calculated from the <a href="https://globalenergymonitor.org/projects/global-coal-plant-tracker/" target="_blank" rel="noopener noreferrer">Global Coal Plant Tracker</a>. A lower ratio indicates less forward pressure from the proposed coal pipeline.</li>\n    <li><strong>Indicator 3: Coal construction pressure.</strong> The ratio of grid-connected coal capacity under construction to operating grid-connected coal capacity in January 2026, calculated from <a href="https://globalenergymonitor.org/projects/global-coal-plant-tracker/" target="_blank" rel="noopener noreferrer">GEM</a>. It distinguishes projects already being built from earlier-stage proposals.</li>\n    <li><strong>Indicator 4: Coal share five-year trend.</strong> The linear change in coal’s share of electricity generation from 2019 to 2024, measured in percentage points per year using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember</a>. A declining trend indicates that coal is losing importance in the power mix.</li>\n    <li><strong>Indicator 5: Renewables share five-year trend.</strong> The linear change in renewable electricity share from 2019 to 2024, measured in percentage points per year using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember</a>. A rising trend provides evidence that clean generation is expanding rather than remaining static.</li>\n    <li><strong>Indicator 6: Grid emissions intensity five-year trend.</strong> The linear change in power-sector emissions intensity from 2019 to 2024, measured in grams of CO₂ per kilowatt-hour per year using <a href="https://ember-energy.org/data/yearly-electricity-data/" target="_blank" rel="noopener noreferrer">Ember</a>. A downward trend indicates that changes in the generation mix are translating into lower emissions.</li>\n    <li><strong>Indicator 7: Carbon-pricing infrastructure.</strong> A 0–100 score derived from the World Bank’s <a href="https://carbonpricingdashboard.worldbank.org/" target="_blank" rel="noopener noreferrer">Carbon Pricing Dashboard</a>. It considers implementation status, national or subnational scope, coverage of electricity and heat, explicit coal coverage, emissions coverage and the 2024 carbon price, while preventing early-stage or subnational instruments from receiving the same score as implemented national systems.</li>\n    <li><strong>Indicator 8: Coal phaseout commitment and documented implementation alignment.</strong> A 0–100 score based on whether a jurisdiction has a dated coal-phaseout target and the share of operating grid-connected coal capacity demonstrably aligned with that target. A net-zero year alone does not score because it does not establish a coal-specific implementation pathway.</li>\n  </ul>\n\n  <div class="pillar-heading">Pillar 3: Governance and institutional capacity</div>\n  <p>This pillar assesses whether public institutions and the legal environment can support credible project development and long-term commitments. Coal-phaseout and transition-credit transactions may require coordinated approvals, policy continuity, enforceable contracts, transparent public administration and confidence among asset owners, financiers and buyers that agreed retirement, replacement and credit-delivery arrangements will be upheld.</p>\n  <p>The five indicators use the World Bank’s <a href="https://www.worldbank.org/en/publication/worldwide-governance-indicators" target="_blank" rel="noopener noreferrer">Worldwide Governance Indicators</a>, converted to comparable 0–100 scores. They are broad national measures and do not replace project-specific legal or counterparty due diligence.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Political stability.</strong> The 2024 Political Stability and Absence of Violence measure. It provides a broad signal of disruption risk that could affect policy continuity, project implementation and long-term contractual arrangements.</li>\n    <li><strong>Indicator 2: Government effectiveness.</strong> The 2024 measure of public-service quality, policy formulation and implementation capacity. Stronger performance supports coordinated approvals and the delivery of complex transition programmes.</li>\n    <li><strong>Indicator 3: Regulatory quality.</strong> The 2024 measure of the government’s ability to formulate and implement policies and regulations that permit and promote private-sector development. It is relevant to renewable procurement, investment rules and carbon-market participation.</li>\n    <li><strong>Indicator 4: Rule of law.</strong> The 2024 measure of confidence in and adherence to the rules of society, including contract enforcement and property rights. It provides a high-level signal of whether transaction rights and obligations are likely to be enforceable.</li>\n    <li><strong>Indicator 5: Control of corruption.</strong> The 2024 measure of the extent to which public power is exercised for private gain. It is relevant to procurement integrity, permitting, public counterparties and confidence in the use of transition-related funds.</li>\n  </ul>\n\n  <div class="pillar-heading">Pillar 4: Carbon market maturity</div>\n  <p>This pillar assesses whether a jurisdiction has demonstrated experience with carbon-project development and whether the institutional infrastructure for international carbon cooperation is emerging. For transition-credit developers and financiers, this provides an initial signal of whether projects can move through validation and issuance, whether credits have reached end users, and whether host-country processes can support authorisation and transfer where required.</p>\n  <p>Voluntary carbon-market indicators capture demonstrated activity through 2024. Article 6 indicators capture more recent institutional and operational progress using the <a href="https://article6pipeline.unepccc.org/" target="_blank" rel="noopener noreferrer">UNEP Copenhagen Climate Centre Article 6 Pipeline</a>.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Voluntary carbon-market project activity.</strong> The all-time number of voluntary carbon projects hosted by the country through year-end 2024 in the <a href="https://gspp.berkeley.edu/berkeley-carbon-trading-project/offsets-database" target="_blank" rel="noopener noreferrer">Berkeley Voluntary Registry Offsets Database</a>. A larger project base indicates greater experience with project origination, validation and registry processes.</li>\n    <li><strong>Indicator 2: Voluntary carbon-market issuance scale.</strong> The all-time number of voluntary carbon credits issued from projects hosted by the country through year-end 2024, measured in tonnes of CO₂-equivalent using the <a href="https://gspp.berkeley.edu/berkeley-carbon-trading-project/offsets-database" target="_blank" rel="noopener noreferrer">Berkeley database</a>. It distinguishes project listings from demonstrated credit delivery.</li>\n    <li><strong>Indicator 3: Voluntary carbon-market retirement activity.</strong> The aggregate number of host-country credits retired from 2020 to 2024, measured in tonnes of CO₂-equivalent using the <a href="https://gspp.berkeley.edu/berkeley-carbon-trading-project/offsets-database" target="_blank" rel="noopener noreferrer">Berkeley database</a>. Retirements provide evidence of end-user demand and completed market use.</li>\n    <li><strong>Indicator 4: Article 6 institutional readiness.</strong> A 0–100 score based on five institutional and cooperation milestones recorded in the <a href="https://article6pipeline.unepccc.org/" target="_blank" rel="noopener noreferrer">Article 6 Pipeline</a>. It reflects whether the country has begun establishing the arrangements needed to participate credibly in cooperative carbon-market activity.</li>\n    <li><strong>Indicator 5: Article 6 operational maturity.</strong> A 0–100 stage score based on the most advanced implementation milestone recorded under Article 6.2 or the Paris Agreement Crediting Mechanism, ranging from an identified activity to recorded ITMO transfer or Article 6.4 emission-reduction issuance.</li>\n  </ul>\n\n  <div class="pillar-heading">Pillar 5: Macro-financial conditions</div>\n  <p>This pillar assesses whether the wider financial environment can support long-dated, capital-intensive coal-phaseout and transition-credit transactions. These transactions may need to finance early-retirement compensation, outstanding debt and contractual obligations, renewable replacement, decommissioning and Just Transition measures, while relying partly on future or cross-border carbon revenues. Even a technically credible project can struggle where local finance is shallow, inflation and exchange rates are unstable, or sovereign debt pressure constrains public support and raises the cost of capital.</p>\n  <p>The indicators are national macro-financial signals rather than project bankability tests. Market actors should use them to identify where financing structures, guarantees, currency hedging or concessional support may require greater attention.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Domestic financial depth.</strong> Domestic credit to the private sector in 2024, measured as a percentage of GDP using the World Bank’s <a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank" rel="noopener noreferrer">World Development Indicators</a>. Greater financial depth suggests stronger capacity to intermediate capital and support private investment.</li>\n    <li><strong>Indicator 2: Macroeconomic price stability.</strong> Consumer-price inflation in 2024, measured as an annual percentage using the <a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank" rel="noopener noreferrer">World Development Indicators</a>. Lower absolute inflation indicates a more predictable environment for costs, revenues and financing assumptions.</li>\n    <li><strong>Indicator 3: Sovereign debt pressure.</strong> General government gross debt in 2024, measured as a percentage of GDP using the International Monetary Fund’s <a href="https://www.imf.org/en/Publications/WEO/weo-database" target="_blank" rel="noopener noreferrer">World Economic Outlook Database</a>. Higher debt pressure may constrain fiscal support, guarantees and the government’s ability to absorb transition costs.</li>\n    <li><strong>Indicator 4: Exchange-rate instability.</strong> The average absolute annual logarithmic change in the official exchange rate from 2019 to 2024, calculated from the World Bank’s <a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank" rel="noopener noreferrer">World Development Indicators</a> and expressed as a percentage. Greater instability increases currency-mismatch and repayment risk for cross-border financing and carbon revenues.</li>\n  </ul>\n\n  <div class="pillar-heading">Pillar 6: Just transition and social credibility</div>\n  <p>This pillar assesses whether the wider social and labour environment can support a fair and durable coal transition. Plant closure can affect workers, contractors, households, local businesses and public revenues, while credible transition-credit methodologies make Just Transition planning central to project integrity. Projects that do not recognise these impacts may face resistance, delays, reputational harm, buyer concern or reversal.</p>\n  <p>The indicators capture national enabling conditions rather than plant-level community consent or the adequacy of a particular Just Transition plan. For market actors, they identify where social dialogue, protection systems and labour-market absorption may require deeper assessment and dedicated financing.</p>\n  <ul class="indicator-list">\n    <li><strong>Indicator 1: Labour rights and social dialogue environment.</strong> A 0–100 score derived from the 2024 <a href="https://www.globalrightsindex.org/" target="_blank" rel="noopener noreferrer">ITUC Global Rights Index</a> rating, with a small adjustment for the recorded direction of change. It provides a broad signal of whether workers can organise, participate and raise concerns during transition planning.</li>\n    <li><strong>Indicator 2: Social protection and human-development resilience.</strong> A composite 0–100 score combining population coverage by social-protection systems from <a href="https://rshiny.ilo.org/dataexplorer20/" target="_blank" rel="noopener noreferrer">ILOSTAT</a> with the 2023 <a href="https://hdr.undp.org/data-center" target="_blank" rel="noopener noreferrer">UNDP Human Development Index</a>. It reflects the extent to which workers and communities have broader institutional and human-development buffers against transition disruption.</li>\n    <li><strong>Indicator 3: Labour-market absorption risk.</strong> Total unemployment in 2024, measured as a percentage of the labour force using the World Bank’s <a href="https://databank.worldbank.org/source/world-development-indicators" target="_blank" rel="noopener noreferrer">World Development Indicators</a>. Lower unemployment suggests greater capacity for displaced workers to find alternative employment, although local coal-region conditions may differ markedly from the national average.</li>\n  </ul>\n\n  <div class="methodology-subhead">Data period and annual update approach</div>\n  <p>The principal base year for the index is 2024, the latest year providing sufficiently comparable coverage across most indicators and jurisdictions. Exceptions are limited to essential sources that were unavailable for 2024 or represent current institutional or project status rather than annual outcomes.</p>\n  <p>The RISE renewable-energy policy indicator uses 2023 data. The Human Development Index also uses 2023 data. Certain social indicators use the closest complete observation to 2024 where full 2024 coverage was unavailable. Coal-fleet eligibility and project status use the January 2026 Global Coal Plant Tracker. Article 6 indicators use the UNEP-CCC data available at the disclosed analytical cut-off.</p>\n  <p>The 2024 indicators measure underlying readiness, while the more recent trackers define the current coal-transition opportunity set and capture institutional developments that can change between annual statistical releases. Each future edition should disclose data cut-offs and any material changes in indicator definition, source coverage or treatment.</p>\n\n  <div class="methodology-subhead">Data treatment and scoring</div>\n  <p>Raw indicators are aligned so that higher scores consistently represent stronger readiness. Measures of risk or transition pressure, including coal construction, inflation, sovereign debt pressure and exchange-rate instability, are reverse-scored.</p>\n  <p>Indicators are converted to a common 0–100 scale. Percentile bounds are used where necessary to reduce the influence of extreme outliers. Logarithmic transformations are applied to highly skewed carbon-market measures, including project counts, credit issuances and credit retirements. Indicator scores are aggregated into pillar scores, which are then combined into the overall index score.</p>\n  <p>Missing observations are not automatically treated as zero. Where a defensible estimate is required, it is documented in the analytical model and tested through sensitivity analysis. Where missing data remain, a pillar score requires valid observations covering at least 80% of its original indicator weight. Available weights are proportionately renormalised; the pillar score remains unavailable where the threshold is not met.</p>\n\n  <div class="methodology-subhead">Pillar weights</div>\n  <table class="methodology-weight-table">\n    <thead><tr><th>Pillar</th><th>Overall weight</th><th>Active indicators</th></tr></thead>\n    <tbody>\n      <tr><td>Energy system conditions</td><td>20%</td><td>3</td></tr>\n      <tr><td>Policy and transition commitment</td><td>20%</td><td>8</td></tr>\n      <tr><td>Governance and institutional capacity</td><td>15%</td><td>5</td></tr>\n      <tr><td>Carbon market maturity</td><td>20%</td><td>5</td></tr>\n      <tr><td>Macro-financial conditions</td><td>15%</td><td>4</td></tr>\n      <tr><td>Just transition and social credibility</td><td>10%</td><td>3</td></tr>\n      <tr><td><strong>Total</strong></td><td><strong>100%</strong></td><td><strong>28</strong></td></tr>\n    </tbody>\n  </table>\n  <p>The pillar weights reflect each pillar’s relevance to coal-transition execution, the reliability and coverage of its evidence, and the need to limit duplication across related risks. Indicators within each pillar are weighted according to their relationship with the pillar’s due-diligence question, data quality and distinctiveness from other measures. Detailed indicator weights are retained within the analytical model rather than reproduced on this page.</p>\n\n  <div class="methodology-subhead">Market-confidence overlay</div>\n  <p>The quarterly market-confidence overlay assesses which readiness factors received increased attention from investors, buyers, policymakers and other market participants during each quarter. It does not assign positive or negative media scores to individual jurisdictions. Instead, it adjusts the relative emphasis placed on existing indicators, with the same quarterly adjustments applied consistently across all jurisdictions.</p>\n  <p>Nexis is used as the main systematic discovery corpus, supported by targeted Google searches for primary-source verification. A Q1 pilot using QCIntel informed the development of the initial constructs, terminology and coding rules but is treated as a methodology-development corpus rather than part of the formal quarterly comparison.</p>\n  <p>Duplicate reporting of the same development is clustered into a single evidence event. Several linked pages and documents concerning the same underlying development are treated as a related source bundle unless they provide substantively different decision-relevant evidence. Opposing claims about the same construct within one source are coded as separate actor–claim–construct records so that actor, direction and mechanism are preserved; they remain one source and usually one evidence event.</p>\n  <p>Evidence is assessed according to its relevance to coal transition, evidence type, signal strength and source independence. Construct-level evidence is converted into multipliers of 1.00, 1.05, 1.10 or 1.20. Each scored construct is assigned to its closest primary index indicator. Cross-cutting or project-specific issues without a sufficiently direct country-level indicator are retained as contextual findings rather than forced into the scoring model. Adjusted weights are renormalised to 100% before quarterly scores are calculated.</p>\n\n  <div class="methodology-subhead">Evolution of transition-credit methodologies</div>\n  <p>The ability of transition-credit projects to scale will depend partly on the development and market acceptance of credible methodologies. <a href="https://verra.org/methodologies/vm0052-accelerated-retirement-of-coal-fired-power-plants-using-a-just-transition-v1-0/" target="_blank" rel="noopener noreferrer">Verra VM0052</a> and <a href="https://globalgoals.goldstandard.org/459_paa-m400-05_just-coal-decommissioning/" target="_blank" rel="noopener noreferrer">Gold Standard’s JUST Coal Decommissioning methodology</a> convert complex retirement transactions into auditable requirements covering baseline retirement dates, additionality, renewable replacement, monitoring and impacts on workers and communities.</p>\n  <p>These frameworks cannot remove all uncertainty. Results remain sensitive to the counterfactual retirement date, financial and regulatory additionality, replacement-power delivery, grid responses, leakage, plant operating assumptions and the enforceability of retirement commitments. Verra’s <a href="https://verra.org/methodologies/proposed-revision-to-vm0052-accelerated-retirement-of-coal-fired-power-plants-using-a-just-transition-v1-0/" target="_blank" rel="noopener noreferrer">proposed revision to VM0052</a> illustrates that baseline determination, replacement electricity and grid-emissions treatment remain areas of methodological development.</p>\n  <p>The index therefore applies disclosed annual and quarterly cut-off dates. Material changes in methodologies, guidance from the <a href="https://www.icvcm.org/continuous-improvement-work-programs/standardised-approaches/" target="_blank" rel="noopener noreferrer">Integrity Council for the Voluntary Carbon Market</a> or established market practice may inform subsequent editions or quarterly market-salience analysis, but do not automatically rewrite previously published scores.</p>\n\n  <div class="methodology-subhead">Validation and sensitivity testing</div>\n  <p>Preliminary correlation testing found a maximum inter-pillar correlation of 0.764, below the 0.800 threshold used to flag potentially excessive overlap. The pillar and indicator weighting scenarios are being rerun using the corrected sensitivity model, and final rank-correlation statistics will replace the preliminary results when testing is complete.</p>\n  <p>Final recoded overlay testing produced Spearman rank correlations of 0.998 for Q1 and 0.998 for Q2 against the base index, with no jurisdiction moving by more than two ranking positions. The limited movement is intentional: the overlay adds current market context without overpowering the slower-moving structural findings of the base index.</p>\n  <div class="validation-box">\n    <div class="validation-title">Preliminary robustness summary</div>\n    <div class="validation-grid">\n      <div>Alternative pillar and indicator weighting scenarios</div><div class="validation-value">Final rerun pending</div>\n      <div>Highest inter-pillar correlation</div><div class="validation-value">0.764</div>\n      <div>Base-to-Q1 and base-to-Q2 rank correlations</div><div class="validation-value">0.998 and 0.998</div>\n      <div>Maximum quarterly overlay movement</div><div class="validation-value">2 positions</div>\n    </div>\n  </div>\n\n  <div class="methodology-subhead">User-priority survey and external validation</div>\n  <p>Optional user-priority responses, together with industry and role classifications, are collected to compare stated market priorities with the constructs identified through quarterly evidence coding. Responses are analysed and reported only in aggregate and may be used to validate or refine subsequent overlays, annual methodology revisions or separately labelled sensitivity analyses.</p>\n  <p>Survey responses do not retrospectively alter a published overlay unless a pre-specified revision protocol, minimum response threshold and revised model version are disclosed. Personal contact details are used only to fulfil report-delivery requests and support the stated research purpose; they are not used for marketing.</p>\n  \n\n  <div class="methodology-subhead">AI-assisted analysis and quality control</div>\n  <p>Generative AI is used as an analytical aid rather than as an independent source of evidence. It supports data extraction, evidence coding, formula development, consistency checks and iterative analytical testing. The researcher designs and refines prompts, establishes the classification framework, reviews source documents and corrects coding or calculation decisions. AI-generated outputs are treated as provisional until checked against the underlying dataset, document or evidence source. The researcher retains responsibility for the final methodology, calculations and interpretation.</p>\n\n\n  <div class="methodology-subhead">Limitations</div>\n  <p>The index is a national-level screening tool. Coal-transition transactions ultimately depend on plant-level economics, ownership, contracts, grid access, technical feasibility and community consent. Some international datasets are published with substantial time lags, and English-language evidence availability is uneven across jurisdictions.</p>\n  <div class="pillar-heading">Four unresolved transition tensions</div>\n  <ul class="indicator-list">\n    <li><strong>Additionality versus readiness:</strong> Strong policy and improving economics can make retirement more feasible, but may weaken the case that carbon finance caused it; only a plant-level baseline can resolve this.</li>\n    <li><strong>Transition need versus implementation capability:</strong> Jurisdictions with the largest financing need and emissions opportunity may also have the weakest governance, financial or delivery conditions.</li>\n    <li><strong>Younger fleets versus retirement feasibility:</strong> Newer plants offer greater avoided carbon lock-in but often carry more debt and stronger contractual protection, while older plants may be easier to close but closer to retirement anyway.</li>\n    <li><strong>Speed versus reliability and justice:</strong> Faster closure can increase avoided emissions only where replacement power, grid upgrades and measures for workers and communities are delivered in step.</li>\n  </ul>\n  <p>These tensions remain after the revised non-captive screen because the index separates jurisdictional readiness from plant-level eligibility; it can show where trade-offs may be more manageable, but cannot resolve them for an individual transaction.</p>\n  <p>The index does not directly determine whether a jurisdiction has sufficient technically, spatially and economically feasible clean-energy resources to replace a particular coal fleet. National conditions can conceal limited land availability, weak solar or wind resources in relevant locations, transmission bottlenecks, storage requirements, permitting restrictions and the distance between renewable resources and demand centres.</p>\n  <p>Existing energy-system indicators partly capture actual progress in renewable deployment, but they do not constitute plant-level replacement-power studies. Future editions may consider comparable evidence on renewable-resource potential, grid expansion, storage, cross-border interconnection and clean-electricity imports. Any addition would need to distinguish deliverable replacement electricity from theoretical resource potential and avoid overlap with existing energy-system indicators.</p>\n  <p>Several other relevant issues cannot be measured consistently across the full jurisdiction universe, including plant-specific community support, local grid-connection constraints, contractual arrangements and transaction-level bankability. These factors are reserved for subsequent project due diligence rather than represented through weak or inconsistent national proxies.</p>\n  <p class="methodology-footer">COAL-TO-CLEAN JURISDICTIONAL READINESS INDEX 2026&nbsp;&nbsp;|&nbsp;&nbsp;DEVELOPED BY GRACE TAY, EMSC SUSTAINABILITY MANAGEMENT&nbsp;&nbsp;|&nbsp;&nbsp;CONTACT: K2521144H@E.NTU.EDU.SG</p>\n</div>\n'
+
+
+def render_methodology() -> None:
+    with st.container(key="methodology_section"):
+        st.markdown('<div class="section-title">Methodology</div>', unsafe_allow_html=True)
+        st.markdown(METHODOLOGY_CONTENT, unsafe_allow_html=True)
 
 
 initialise_state()
@@ -2188,23 +2751,28 @@ initialise_state()
 try:
     index_data = load_index_data(str(DATA_FILE))
     overlay_data = load_market_overlay(str(DATA_FILE))
+    market_drivers, market_context, market_developments = load_market_content(
+    str(DATA_FILE),
+    DATA_FILE.stat().st_mtime,)
 except Exception as exc:
     st.error(str(exc))
     st.stop()
 
 view = query_value("view", "overall")
-if view not in {"overall", "market", "priorities", "methodology"}:
+if view not in {"overall", "market", "priorities", "methodology", "validation"}:
     view = "overall"
 
 render_sidebar(view)
 render_header()
 
 if view == "market":
-    render_market(index_data, overlay_data)
+    render_market(index_data, overlay_data, market_drivers, market_context, market_developments)
 elif view == "priorities":
     render_priorities(index_data)
 elif view == "methodology":
     render_methodology()
+elif view == "validation":
+    render_validation()
 else:
     render_overall(index_data)
 
@@ -2248,7 +2816,7 @@ if st.session_state.scroll_to_top or st.session_state.scroll_target:
               win.scrollTo(0, 0);
             }}
           }};
-          [0, 50, 200, 500, 1000, 1800, 2800].forEach((delay) => win.setTimeout(scrollTarget, delay));
+          win.setTimeout(scrollTarget, 100);
         }})();
         </script>
         """,
@@ -2258,5 +2826,7 @@ if st.session_state.scroll_to_top or st.session_state.scroll_target:
     st.session_state.scroll_to_top = False
     st.session_state.scroll_target = None
 
-if st.session_state.gate_action:
-    research_gate_dialog(index_data)
+if st.session_state.gate_action == "download":
+    download_gate_dialog(index_data)
+elif st.session_state.gate_action == "email":
+    email_gate_dialog(index_data)
