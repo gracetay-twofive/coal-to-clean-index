@@ -2059,7 +2059,7 @@ def log_profile_details(reason: str) -> tuple[bool, str]:
             "role": st.session_state.profile_role,
             "started_at": st.session_state.session_started_at,
         },
-        timeout=12,
+        timeout=45,
     )
 
 
@@ -2079,7 +2079,7 @@ def download_gate_dialog(index_data: pd.DataFrame) -> None:
         if st.session_state.profile_capture_pending:
             ok, message = log_profile_details("download")
             st.session_state.session_logged = st.session_state.session_logged or ok
-            st.session_state.logging_notice = None if ok else "Your PDF can continue, but Google Sheets logging did not complete. " + message
+            st.session_state.logging_notice = None if ok else "Your PDF is ready. User session unconfirmed. " + message
             st.session_state.profile_capture_pending = False
 
         ok, message = prepare_pdf(index_data, current_version)
