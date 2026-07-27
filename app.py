@@ -1206,13 +1206,16 @@ def base_results(index_data: pd.DataFrame) -> pd.DataFrame:
 
 
 def adjusted_weights(industry: str, responses: dict[str, int]) -> list[float]:
-    slider_multipliers = {1: 0.60, 2: 0.80, 3: 1.00, 4: 1.20, 5: 1.40}
+    slider_multipliers = {1: 0.80, 2: 0.90, 3: 1.00, 4: 1.10, 5: 1.20}
     pillar_responses: list[list[int]] = [[] for _ in range(6)]
     for item in SURVEY_ITEMS:
         for pillar_index in item["pillars"]:
             pillar_responses[pillar_index].append(responses[item["key"]])
     response_values = [sum(values) / len(values) if values else 3 for values in pillar_responses]
-    industry_values = INDUSTRY_MULTIPLIERS[industry]
+    industry_values = [
+    1 + 0.5 * (value - 1)
+    for value in INDUSTRY_MULTIPLIERS[industry]
+]
     pre_normalised = [
         base * industry_multiplier * slider_multipliers[int(round(response_value))]
         for base, industry_multiplier, response_value in zip(BASE_WEIGHTS, industry_values, response_values)
