@@ -2454,7 +2454,7 @@ def process_priority_submission(index_data: pd.DataFrame, submission: dict[str, 
                 "rankings": rankings_payload,
             },
         },
-        timeout=15,
+        timeout=45,
     )
     st.session_state.session_logged = logging_ok
     st.session_state.logging_notice = None if logging_ok else (
