@@ -1343,8 +1343,23 @@ header[data-testid="stHeader"] { background: transparent; }
 .survey-info-details .info-panel a {
     font-family: 'Montserrat', sans-serif !important;
 }
-.survey-scenario-lead { display: flex; align-items: baseline; flex-wrap: wrap; }
+.survey-scenario-lead {
+    display: block;
+}
 
+.survey-scenario-lead > span {
+    display: inline;
+}
+
+.survey-scenario-lead .survey-info-icon {
+    display: inline-block !important;
+    margin-left: 5px;
+    vertical-align: baseline;
+}
+
+.survey-scenario-lead .survey-info-icon summary {
+    display: inline-block !important;
+}
 /* More breathing room between radio options. */
 .st-key-validation_section [data-testid="stRadio"] [role="radiogroup"] { gap: 9px !important; }
 .st-key-validation_section [data-testid="stRadio"] label { line-height: 1.55 !important; margin-bottom: 3px !important; }
@@ -1534,7 +1549,6 @@ ul[role="listbox"] * {
         overflow-y: auto !important;
         z-index: 3000 !important;
     }
-    .survey-scenario-lead { align-items: flex-start !important; }
     .st-key-survey_submit_row .stButton > button {
         width: 100% !important;
         min-height: 44px !important;
@@ -3622,7 +3636,7 @@ def render_validation(index_data: pd.DataFrame) -> None:
             st.markdown(
                 f"""
                 <div class="survey-scenario-copy">
-                  <div class="survey-scenario-lead"><p>Imagine that you are assessing whether to support a coal-to-clean transition-credit project.</p>{validation_more_info_html(compact=True)}</div>
+                  <div class="survey-scenario-lead"><span>Imagine that you are assessing whether to support a coal-to-clean transition-credit project.</span>&nbsp;{validation_more_info_html(compact=True)}</div>
                   <p>Support could involve buying credits through an offtake agreement, investing, financing, developing the project or recommending it professionally.</p>
                   <p>Please answer from your professional perspective, even if you do not personally purchase carbon credits or work directly with carbon projects.</p>
                 </div>
