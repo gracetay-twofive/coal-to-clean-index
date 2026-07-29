@@ -1379,10 +1379,12 @@ header[data-testid="stHeader"] { background: transparent; }
     line-height: 1.45 !important;
 }
 .survey-scenario-lead {
-    margin: 0 0 8px 0;
+    margin: 0;
     color: var(--ink-muted);
     font-family: 'Montserrat', sans-serif !important;
     line-height: 1.62;
+    font-size: 14px !important;
+    line-height: 1.62 !important;
 }
 .survey-info-icon {
     margin-left: 5px;
@@ -1669,11 +1671,6 @@ ul[role="listbox"] * {
     }
     .st-key-validation_section [data-testid="stMultiSelect"] { width: 100% !important; }
 
-    /* The survey panel remains compact without locking or moving the page. */
-    .survey-scenario-lead !important {
-        font-size: 14px !important;
-        line-height: 1.62 !important;
-    }
     .survey-info-link > summary { font-size: 13px !important; }
     .survey-info-panel {
         position: fixed !important;
