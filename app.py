@@ -1351,93 +1351,123 @@ header[data-testid="stHeader"] { background: transparent; }
     color: #ffffff !important;
 }
 
-/* Survey information uses Streamlit's native popover component. This avoids
-   exposing custom HTML tags in deployed Markdown and closes on an outside tap. */
-.st-key-survey_intro_info,
-.st-key-survey_scenario_info {
-    width: fit-content;
-    margin: 10px 0 4px 0;
+/* Survey information uses the same lightweight details-panel interaction as
+   the information icon beside the main index title. */
+.survey-info-details {
+    display: inline-block;
+    position: relative;
+    z-index: 50;
+    font-family: 'Montserrat', sans-serif !important;
 }
-.st-key-survey_intro_info button,
-.st-key-survey_scenario_info button {
-    min-height: 0 !important;
-    padding: 2px 0 !important;
-    border: 0 !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
+.survey-info-details > summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
     color: var(--accent) !important;
     font-family: 'Montserrat', sans-serif !important;
+    text-decoration: none !important;
+}
+.survey-info-details > summary::-webkit-details-marker { display: none; }
+.survey-info-details > summary::marker { display: none; content: ''; }
+.survey-info-details > summary:hover,
+.survey-info-details > summary:focus-visible { color: #1f4775 !important; }
+.survey-info-link { margin: 10px 0 4px 0; }
+.survey-info-link > summary {
     font-size: 14px !important;
     font-weight: 600 !important;
     line-height: 1.45 !important;
+}
+.survey-scenario-lead {
+    margin: 0 0 8px 0;
+    color: var(--ink-muted);
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 13px;
+    line-height: 1.62;
+}
+.survey-info-icon {
+    margin-left: 5px;
+    vertical-align: baseline;
+}
+.survey-info-icon > summary {
+    display: inline-block;
+    color: var(--accent-mid) !important;
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    line-height: 1 !important;
+    vertical-align: -1px;
+}
+.survey-info-panel {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 8px);
+    z-index: 10000;
+    width: min(620px, calc(100vw - 48px));
+    max-height: min(68vh, 580px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 18px 20px;
+    border: 1px solid rgba(43,86,136,.18);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 18px 50px rgba(43,86,136,.18);
+    color: var(--ink);
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 14px !important;
+    line-height: 1.58;
+}
+.survey-info-icon .survey-info-panel { left: auto; right: 0; }
+.survey-info-panel,
+.survey-info-panel p,
+.survey-info-panel a,
+.survey-info-panel strong {
+    font-family: 'Montserrat', sans-serif !important;
+}
+.survey-info-panel p {
+    margin: 0 0 10px 0 !important;
+    font-size: 14px !important;
+    line-height: 1.58 !important;
+}
+.survey-info-panel p:last-child { margin-bottom: 0 !important; }
+.survey-info-panel a {
+    color: var(--accent) !important;
+    font-weight: 600 !important;
     text-decoration: underline !important;
     text-decoration-color: var(--warm-accent-strong) !important;
-    text-decoration-thickness: 3px !important;
+    text-decoration-thickness: 2px !important;
     text-underline-offset: 3px !important;
-}
-.st-key-survey_intro_info button:hover,
-.st-key-survey_intro_info button:focus-visible,
-.st-key-survey_scenario_info button:hover,
-.st-key-survey_scenario_info button:focus-visible,
-.st-key-survey_intro_info button *,
-.st-key-survey_scenario_info button * {
-    color: var(--accent) !important;
-}
-.st-key-survey_scenario_info { margin-top: -12px; margin-bottom: 12px; }
-
-/* Native popover panel. Streamlit supplies outside-tap and Escape closing. */
-[data-testid="stPopoverBody"] {
-    width: min(680px, calc(100vw - 36px)) !important;
-    max-width: 680px !important;
-    max-height: min(72vh, 620px) !important;
-    overflow-y: auto !important;
-    overscroll-behavior: contain !important;
-    padding: 16px 18px 18px 18px !important;
-    border-radius: 14px !important;
-    font-family: 'Montserrat', sans-serif !important;
-}
-[data-testid="stPopoverBody"],
-[data-testid="stPopoverBody"] p,
-[data-testid="stPopoverBody"] a,
-[data-testid="stPopoverBody"] strong {
-    font-family: 'Montserrat', sans-serif !important;
-}
-[data-testid="stPopoverBody"] p {
-    margin: 0 0 11px 0 !important;
-    font-size: 14px !important;
-    line-height: 1.55 !important;
-}
-[data-testid="stPopoverBody"] a { color: var(--accent) !important; }
-[class*="st-key-survey_popover_close_"] .stButton > button {
-    float: right;
-    width: auto !important;
-    min-width: 92px !important;
-    min-height: 36px !important;
-    margin: 0 0 12px 12px !important;
-    padding: 7px 12px !important;
-    border: 1px solid var(--accent) !important;
-    border-radius: 8px !important;
-    background: var(--accent) !important;
-    color: #ffffff !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    text-decoration: none !important;
-}
-[class*="st-key-survey_popover_close_"] .stButton > button:hover,
-[class*="st-key-survey_popover_close_"] .stButton > button:focus-visible {
-    background: #1f4775 !important;
-    color: #ffffff !important;
-}
-[class*="st-key-survey_popover_close_"] .stButton > button *,
-[class*="st-key-survey_popover_close_"] .stButton > button:hover *,
-[class*="st-key-survey_popover_close_"] .stButton > button:focus-visible * {
-    color: #ffffff !important;
 }
 
 /* More breathing room between radio options. */
 .st-key-validation_section [data-testid="stRadio"] [role="radiogroup"] { gap: 9px !important; }
 .st-key-validation_section [data-testid="stRadio"] label { line-height: 1.55 !important; margin-bottom: 3px !important; }
+
+/* Small confirmation toast shown after a desktop survey submission. */
+.survey-thanks-toast {
+    position: fixed;
+    top: 24px;
+    right: 28px;
+    z-index: 100000;
+    width: min(390px, calc(100vw - 48px));
+    padding: 15px 18px;
+    border: 1px solid rgba(43, 86, 136, .18);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 14px 38px rgba(43, 86, 136, .18);
+    color: var(--ink);
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.5;
+    pointer-events: none;
+    animation: surveyThanksToastLifecycle 5s ease forwards;
+}
+@keyframes surveyThanksToastLifecycle {
+    0%   { opacity: 0; transform: translateY(-8px); }
+    8%   { opacity: 1; transform: translateY(0); }
+    82%  { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(-8px); visibility: hidden; }
+}
 
 /* Research-survey invitation shown only after a customised priorities result. */
 .chart-explainer .research-survey-invite { margin-top: 13px; font-size: 14px; line-height: 1.55; }
@@ -1640,26 +1670,30 @@ ul[role="listbox"] * {
     }
     .st-key-validation_section [data-testid="stMultiSelect"] { width: 100% !important; }
 
-    /* Native survey popovers remain compact and leave space around the panel. */
-    [data-testid="stPopoverBody"] {
-        width: calc(100vw - 28px) !important;
+    /* The survey panel remains compact without locking or moving the page. */
+    .survey-scenario-lead {
+        font-size: 14px !important;
+        line-height: 1.62 !important;
+    }
+    .survey-info-link > summary { font-size: 13px !important; }
+    .survey-info-panel {
+        position: fixed !important;
+        left: 14px !important;
+        right: 14px !important;
+        top: 16dvh !important;
+        width: auto !important;
         max-width: none !important;
-        max-height: min(62dvh, 500px) !important;
-        padding: 14px 15px 16px 15px !important;
+        max-height: 66dvh !important;
+        padding: 15px 16px !important;
         border-radius: 12px !important;
         overflow-y: auto !important;
         overscroll-behavior: contain !important;
-    }
-    [data-testid="stPopoverBody"] p {
         font-size: 13px !important;
-        line-height: 1.5 !important;
+    }
+    .survey-info-panel p {
+        font-size: 13px !important;
+        line-height: 1.52 !important;
         margin-bottom: 9px !important;
-    }
-    .st-key-survey_intro_info button,
-    .st-key-survey_scenario_info button {
-        font-size: 13px !important;
-        white-space: normal !important;
-        text-align: left !important;
     }
     .st-key-survey_submit_row .stButton > button {
         width: 100% !important;
@@ -3525,20 +3559,58 @@ SURVEY_MORE_INFO_BODY = """
 
 
 def validation_more_info(*, compact: bool = False) -> None:
-    """Render survey information in Streamlit's native, outside-tap-closing popover."""
+    """Render the survey information panel using the main-title details UX."""
     variant = "scenario" if compact else "intro"
-    label = "ⓘ More about this project type" if compact else "More about coal-to-clean projects and transition credits"
-    with st.container(key=f"survey_{variant}_info"):
-        with st.popover(label):
-            with st.container(key=f"survey_popover_close_{variant}"):
-                if st.button("Close ×", key=f"survey_popover_close_button_{variant}"):
-                    st.rerun()
-            st.markdown(SURVEY_MORE_INFO_BODY, unsafe_allow_html=True)
-            st.caption("Tap or click outside this panel to close it.")
+    details_id = f"survey-more-info-{variant}"
+
+    if compact:
+        trigger_html = f"""
+        <div class="survey-scenario-lead">
+          Imagine that you are assessing whether to support a coal-to-clean transition-credit project.
+          <details class="survey-info-details survey-info-icon" id="{details_id}">
+            <summary aria-label="More about coal-to-clean projects and transition credits" title="More about coal-to-clean projects and transition credits">ⓘ</summary>
+            <div class="survey-info-panel">{SURVEY_MORE_INFO_BODY}</div>
+          </details>
+        </div>
+        """
+    else:
+        trigger_html = f"""
+        <details class="survey-info-details survey-info-link" id="{details_id}">
+          <summary>More about coal-to-clean projects and transition credits</summary>
+          <div class="survey-info-panel">{SURVEY_MORE_INFO_BODY}</div>
+        </details>
+        """
+
+    st.html(
+        trigger_html
+        + f"""
+        <script>
+          (() => {{
+            const details = document.getElementById('{details_id}');
+            if (!details) return;
+
+            const closePanel = () => details.removeAttribute('open');
+
+            document.addEventListener('pointerdown', (event) => {{
+              if (details.open && !details.contains(event.target)) closePanel();
+            }});
+
+            document.addEventListener('keydown', (event) => {{
+              if (event.key === 'Escape') closePanel();
+            }});
+
+            details.querySelectorAll('a').forEach((link) => {{
+              link.addEventListener('click', closePanel);
+            }});
+          }})();
+        </script>
+        """,
+        unsafe_allow_javascript=True,
+    )
 
 
 def render_survey_popup_behaviour() -> None:
-    """Native Streamlit popovers handle outside taps, repeat taps and Escape."""
+    """Each survey information trigger installs its own close behaviour."""
     return
 
 
@@ -3740,14 +3812,6 @@ def render_validation(index_data: pd.DataFrame) -> None:
             st.markdown('<div class="survey-details-gap"></div>', unsafe_allow_html=True)
             st.markdown(
                 '<div class="survey-question-intro">When assessing a coal-to-clean opportunity, how important are the following?</div>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                """
-                <div class="survey-scenario-copy">
-                  <p>Imagine that you are assessing whether to support a coal-to-clean transition-credit project.</p>
-                </div>
-                """,
                 unsafe_allow_html=True,
             )
             validation_more_info(compact=True)
@@ -4276,7 +4340,10 @@ else:
     render_mobile_desktop_notice()
 
 if st.session_state.survey_success_pending and view != "validation":
-    st.success("Thank you. Your survey responses have been recorded.")
+    st.markdown(
+        '<div class="survey-thanks-toast">Thank you for sharing your views. Explore the index to see how jurisdictions compare.</div>',
+        unsafe_allow_html=True,
+    )
     st.session_state.survey_success_pending = False
 
 if view == "market":
