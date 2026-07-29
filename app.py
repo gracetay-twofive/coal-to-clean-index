@@ -3781,25 +3781,63 @@ def render_validation(index_data: pd.DataFrame) -> None:
                 args=("validation_preferred_hosts",),
             )
 
-            st.markdown('<div class="survey-subtitle">Q26. Coal phase-out initiatives</div>', unsafe_allow_html=True)
             st.markdown(
-                '<div class="survey-help">Which initiatives do you believe have the greatest potential to accelerate coal phase-out? Rank up to three initiatives you know enough about to assess.</div>',
-                unsafe_allow_html=True,
-            )
-            rank_options = ["No selection", *COAL_PHASEOUT_INITIATIVES]
-            rank1, rank2, rank3 = st.columns(3, gap="large")
-            with rank1:
-                initiative_1 = st.selectbox("First choice", rank_options, key="validation_initiative_1")
-            with rank2:
-                initiative_2 = st.selectbox("Second choice", rank_options, key="validation_initiative_2")
-            with rank3:
-                initiative_3 = st.selectbox("Third choice", rank_options, key="validation_initiative_3")
-            initiative_other = ""
-            if "Other" in {initiative_1, initiative_2, initiative_3}:
-                initiative_other = st.text_input(
-                    "Please specify the other initiative",
-                    key="validation_initiative_other",
-                )
+    '<div class="survey-subtitle">Q26. Coal phase-out initiatives</div>',
+    unsafe_allow_html=True,
+)
+st.markdown(
+    '<div class="survey-help">'
+    'Which initiatives do you believe have the greatest potential to accelerate '
+    'coal phase-out? Rank up to three initiatives you know enough about to assess. '
+    'Stop whenever you have no further choices.'
+    '</div>',
+    unsafe_allow_html=True,
+)
+
+unsure_initiative = (
+    "I do not know enough about these initiatives to rank them"
+)
+
+first_choice_options = ["No selection", *COAL_PHASEOUT_INITIATIVES]
+
+later_choice_options = [
+    "No further choice",
+    *[
+        initiative
+        for initiative in COAL_PHASEOUT_INITIATIVES
+        if initiative != unsure_initiative
+    ],
+]
+
+rank1, rank2, rank3 = st.columns(3, gap="large")
+
+with rank1:
+    initiative_1 = st.selectbox(
+        "First choice",
+        first_choice_options,
+        key="validation_initiative_1",
+    )
+
+with rank2:
+    initiative_2 = st.selectbox(
+        "Second choice",
+        later_choice_options,
+        key="validation_initiative_2",
+    )
+
+with rank3:
+    initiative_3 = st.selectbox(
+        "Third choice",
+        later_choice_options,
+        key="validation_initiative_3",
+    )
+
+initiative_other = ""
+if "Other" in {initiative_1, initiative_2, initiative_3}:
+    initiative_other = st.text_input(
+        "Please specify the other initiative",
+        key="validation_initiative_other",
+    )
 
             st.markdown('<div class="survey-subtitle">Q27. Five most important factors</div>', unsafe_allow_html=True)
             st.markdown(
