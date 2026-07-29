@@ -1382,7 +1382,6 @@ header[data-testid="stHeader"] { background: transparent; }
     margin: 0 0 8px 0;
     color: var(--ink-muted);
     font-family: 'Montserrat', sans-serif !important;
-    font-size: 13px;
     line-height: 1.62;
 }
 .survey-info-icon {
@@ -1671,7 +1670,7 @@ ul[role="listbox"] * {
     .st-key-validation_section [data-testid="stMultiSelect"] { width: 100% !important; }
 
     /* The survey panel remains compact without locking or moving the page. */
-    .survey-scenario-lead {
+    .survey-scenario-lead !important {
         font-size: 14px !important;
         line-height: 1.62 !important;
     }
