@@ -1320,11 +1320,20 @@ header[data-testid="stHeader"] { background: transparent; }
 .st-key-survey_submit_row { margin-top: 34px; }
 .st-key-survey_submit_row .stButton > button { min-width: 132px; width: auto !important; }
 
-/* Survey information panels use the same typography and links as the main index popup. */
-.survey-info-details { vertical-align: baseline; }
-.survey-info-details summary { font-family: 'Montserrat', sans-serif !important; }
-.survey-info-link { display: block; width: fit-content; margin: 12px 0 2px 0; }
-.survey-info-link summary {
+/* Survey information popovers. Native popovers close on outside tap and Escape. */
+.survey-info-trigger {
+    appearance: none;
+    -webkit-appearance: none;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    font-family: 'Montserrat', sans-serif !important;
+    cursor: pointer;
+}
+.survey-info-link-trigger {
+    display: block;
+    width: fit-content;
+    margin: 12px 0 2px 0;
     color: var(--accent) !important;
     font-size: 14px !important;
     font-weight: 600 !important;
@@ -1334,23 +1343,78 @@ header[data-testid="stHeader"] { background: transparent; }
     text-decoration-thickness: 3px;
     text-underline-offset: 3px;
 }
-.survey-info-link .info-panel { left: 0; right: auto; top: 28px; }
-.survey-info-icon { margin-left: 5px; }
-.survey-info-icon summary { color: var(--accent-mid) !important; font-size: 16px !important; }
-.survey-info-icon .info-panel { left: 0; right: auto; top: 24px; }
-.survey-info-details .info-panel,
-.survey-info-details .info-panel p,
-.survey-info-details .info-panel a {
+.survey-info-icon-trigger {
+    display: inline-block !important;
+    margin-left: 5px;
+    color: var(--accent-mid) !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    vertical-align: baseline;
+}
+.survey-info-popover {
+    position: fixed !important;
+    inset: 0 !important;
+    width: min(680px, calc(100vw - 36px)) !important;
+    max-width: 680px !important;
+    max-height: min(72vh, 620px) !important;
+    margin: auto !important;
+    padding: 58px 24px 22px 24px !important;
+    overflow-y: auto !important;
+    border: 1px solid rgba(43,86,136,.18) !important;
+    border-radius: 14px !important;
+    background: #ffffff !important;
+    box-shadow: 0 20px 60px rgba(25,45,70,.24) !important;
+    color: var(--ink) !important;
     font-family: 'Montserrat', sans-serif !important;
+    font-size: 15px !important;
+    line-height: 1.58 !important;
+    z-index: 5000 !important;
+}
+.survey-info-popover::backdrop {
+    background: rgba(19, 35, 54, .22);
+}
+.survey-info-popover p,
+.survey-info-popover a,
+.survey-info-popover strong {
+    font-family: 'Montserrat', sans-serif !important;
+}
+.survey-info-popover p {
+    margin: 0 0 12px 0 !important;
+    font-size: 15px !important;
+    line-height: 1.58 !important;
+}
+.survey-info-popover p:last-child { margin-bottom: 0 !important; }
+.survey-info-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    min-width: 92px;
+    min-height: 36px;
+    padding: 7px 12px;
+    border: 1px solid rgba(43,86,136,.30);
+    border-radius: 8px;
+    background: var(--accent) !important;
+    color: #ffffff !important;
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
+    cursor: pointer;
+}
+.survey-info-close:hover,
+.survey-info-close:focus-visible {
+    background: #1f4775 !important;
+    outline: 3px solid var(--warm-accent-strong);
+    outline-offset: 2px;
+}
+.survey-info-close-x {
+    margin-left: 6px;
+    font-size: 17px;
+    line-height: .8;
+    vertical-align: -1px;
 }
 .survey-scenario-lead { display: block; }
 .survey-scenario-lead > span { display: inline; }
-.survey-scenario-lead .survey-info-icon {
-    display: inline-block !important;
-    margin-left: 5px;
-    vertical-align: baseline;
-}
-.survey-scenario-lead .survey-info-icon summary { display: inline-block !important; }
 
 /* More breathing room between radio options. */
 .st-key-validation_section [data-testid="stRadio"] [role="radiogroup"] { gap: 9px !important; }
@@ -1528,18 +1592,28 @@ ul[role="listbox"] * {
     }
     .st-key-validation_section [data-testid="stMultiSelect"] { width: 100% !important; }
 
-    /* Keep information panels inside the viewport and make them scrollable. */
-    .survey-info-link .info-panel,
-    .survey-info-icon .info-panel {
-        position: fixed !important;
-        left: 12px !important;
-        right: 12px !important;
-        top: 68px !important;
-        width: auto !important;
+    /* Compact mobile popover: visible close control, smaller type and spare screen space. */
+    .survey-info-popover {
+        width: calc(100vw - 28px) !important;
         max-width: none !important;
-        max-height: calc(100vh - 92px) !important;
-        overflow-y: auto !important;
-        z-index: 3000 !important;
+        max-height: min(68dvh, 520px) !important;
+        padding: 54px 16px 18px 16px !important;
+        border-radius: 12px !important;
+        font-size: 13px !important;
+        line-height: 1.52 !important;
+        overscroll-behavior: contain;
+    }
+    .survey-info-popover p {
+        font-size: 13px !important;
+        line-height: 1.52 !important;
+        margin-bottom: 10px !important;
+    }
+    .survey-info-close {
+        top: 10px;
+        right: 10px;
+        min-width: 94px;
+        min-height: 38px;
+        font-size: 13px;
     }
     .st-key-survey_submit_row .stButton > button {
         width: 100% !important;
@@ -1551,7 +1625,7 @@ ul[role="listbox"] * {
     .block-container { padding-left: .5rem !important; padding-right: .5rem !important; }
     .st-key-validation_section { padding: 17px 12px !important; }
     .st-key-validation_section .section-title { font-size: 22px !important; }
-    .survey-info-link summary { font-size: 13px !important; }
+    .survey-info-link-trigger { font-size: 13px !important; }
     .priority-scale-note { font-size: 9px !important; }
 }
 
@@ -3373,21 +3447,33 @@ def render_priorities(index_data: pd.DataFrame) -> None:
 
 def validation_more_info_html(*, compact: bool = False) -> str:
     summary = "ⓘ" if compact else "More about coal-to-clean projects and transition credits"
-    detail_class = "survey-info-icon" if compact else "survey-info-link"
+    trigger_class = "survey-info-icon-trigger" if compact else "survey-info-link-trigger"
+    popover_id = "survey-more-info-scenario" if compact else "survey-more-info-intro"
     title = "More about coal-to-clean projects and transition credits"
     return f"""
-    <details class="info-details survey-info-details {detail_class}">
-      <summary aria-label="{title}" title="{title}">{summary}</summary>
-      <div class="info-panel">
-        <p><strong>{title}</strong></p>
-        <p>Coal-to-clean projects seek to close a coal-fired power plant earlier than it would otherwise be expected to retire.</p>
-        <p>Project finance may support early closure and decommissioning, new renewable electricity generation, grid-related measures, and support for affected workers and communities.</p>
-        <p>The emissions avoided through early closure are compared with a baseline representing how long the plant would otherwise have operated. Verified net emission reductions before the baseline retirement date may be issued as carbon credits, sometimes called transition credits.</p>
-        <p>Verra and Gold Standard have published methodologies for this project type. Several proposed transactions are being assessed or piloted, but the market remains at an early stage.</p>
-        <p><a href="https://verra.org/methodologies/vm0052-accelerated-retirement-of-coal-fired-power-plants-using-a-just-transition-v1-0/" target="_blank" rel="noopener noreferrer">VM0052 Accelerated Retirement of Coal-Fired Power Plants Using a Just Transition</a></p>
-        <p><a href="https://globalgoals.goldstandard.org/459_paa-m400-05_just-coal-decommissioning/" target="_blank" rel="noopener noreferrer">Gold Standard JUST: Coal Decommissioning methodology</a></p>
-      </div>
-    </details>
+    <button
+      type="button"
+      class="survey-info-trigger {trigger_class}"
+      popovertarget="{popover_id}"
+      aria-label="{title}"
+      title="{title}"
+    >{summary}</button>
+    <div id="{popover_id}" popover="auto" class="info-panel survey-info-popover">
+      <button
+        type="button"
+        class="survey-info-close"
+        popovertarget="{popover_id}"
+        popovertargetaction="hide"
+        aria-label="Close information panel"
+      >Close<span class="survey-info-close-x" aria-hidden="true">×</span></button>
+      <p><strong>{title}</strong></p>
+      <p>Coal-to-clean projects seek to close a coal-fired power plant earlier than it would otherwise be expected to retire.</p>
+      <p>Project finance may support early closure and decommissioning, new renewable electricity generation, grid-related measures, and support for affected workers and communities.</p>
+      <p>The emissions avoided through early closure are compared with a baseline representing how long the plant would otherwise have operated. Verified net emission reductions before the baseline retirement date may be issued as carbon credits, sometimes called transition credits.</p>
+      <p>Verra and Gold Standard have published methodologies for this project type. Several proposed transactions are being assessed or piloted, but the market remains at an early stage.</p>
+      <p><a href="https://verra.org/methodologies/vm0052-accelerated-retirement-of-coal-fired-power-plants-using-a-just-transition-v1-0/" target="_blank" rel="noopener noreferrer">VM0052 Accelerated Retirement of Coal-Fired Power Plants Using a Just Transition</a></p>
+      <p><a href="https://globalgoals.goldstandard.org/459_paa-m400-05_just-coal-decommissioning/" target="_blank" rel="noopener noreferrer">Gold Standard JUST: Coal Decommissioning methodology</a></p>
+    </div>
     """
 
 
@@ -3396,33 +3482,8 @@ def validation_more_info(*, compact: bool = False) -> None:
 
 
 def render_survey_popup_behaviour() -> None:
-    """Close either survey information panel when the user clicks elsewhere."""
-    st.html(
-        """
-        <script>
-        (() => {
-          const win = window.parent;
-          const doc = win.document;
-          if (win.__ctcSurveyPopupCloseBound) return;
-          win.__ctcSurveyPopupCloseBound = true;
-
-          doc.addEventListener('click', (event) => {
-            doc.querySelectorAll('details.survey-info-details[open]').forEach((details) => {
-              if (!details.contains(event.target)) details.removeAttribute('open');
-            });
-          }, true);
-
-          doc.addEventListener('keydown', (event) => {
-            if (event.key !== 'Escape') return;
-            doc.querySelectorAll('details.survey-info-details[open]').forEach((details) => {
-              details.removeAttribute('open');
-            });
-          });
-        })();
-        </script>
-        """,
-        unsafe_allow_javascript=True,
-    )
+    """Use native auto-popovers, which close on outside tap and Escape."""
+    return
 
 
 def post_validation_backend(
