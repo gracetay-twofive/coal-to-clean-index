@@ -3570,7 +3570,7 @@ def validation_more_info(*, compact: bool = False) -> None:
     if compact:
         trigger_html = f"""
         <div class="survey-scenario-lead">
-          Imagine that you are assessing whether to support a coal-to-clean transition-credit project.
+          Imagine that you are assessing whether to support a coal-to-clean transition-credit project and scrutinising the country or jurisdiction where the coal plant is.
           <details class="survey-info-details survey-info-icon" id="{details_id}">
             <summary aria-label="More about coal-to-clean projects and transition credits" title="More about coal-to-clean projects and transition credits">ⓘ</summary>
             <div class="survey-info-panel">{SURVEY_MORE_INFO_BODY}</div>
