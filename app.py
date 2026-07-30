@@ -116,7 +116,7 @@ INDUSTRY_MULTIPLIERS = {
     "Metals and steel": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mining": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mobility and fleet services": [1.05, 1.00, 1.00, 1.00, 1.10, 1.00],
-    "NGOs and civil-society organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+    "Non-governmental (NGOs) and civil-society organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Oil and gas": [1.15, 1.05, 1.00, 0.95, 1.10, 1.00],
     "Pharmaceuticals": [0.95, 1.00, 1.00, 1.05, 1.00, 1.05],
     "Power generation": [1.20, 1.10, 1.00, 0.90, 1.00, 1.10],
@@ -143,7 +143,6 @@ ROLE_OPTIONS = [
     "Project developer or originator",
     "Government or regulator",
     "Standard, registry or assurance provider",
-    "Civil society, research or academia",
     "Asset owner or operator",
     "Sustainability, climate or environmental role",
     "Policy, programme or technical specialist",
@@ -151,6 +150,7 @@ ROLE_OPTIONS = [
     "News, editorial or content production",
     "Communications",
     "Research, analysis or market intelligence",
+    "Civil society",
     "Other",
 ]
 
