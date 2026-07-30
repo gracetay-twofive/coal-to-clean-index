@@ -110,7 +110,9 @@ INDUSTRY_MULTIPLIERS = {
     "Infrastructure": [1.10, 1.05, 1.00, 0.95, 1.10, 1.00],
     "Insurance": [0.95, 1.05, 1.10, 1.05, 1.25, 1.00],
     "International and intergovernmental organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+    "Market intelligence, research and data services": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Manufacturing": [1.10, 1.05, 1.00, 0.95, 1.15, 0.95],
+    "Media and communications": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Metals and steel": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mining": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mobility and fleet services": [1.05, 1.00, 1.00, 1.00, 1.10, 1.00],
@@ -146,6 +148,8 @@ ROLE_OPTIONS = [
     "Sustainability, climate or environmental role",
     "Policy, programme or technical specialist",
     "Advocacy, partnerships or stakeholder engagement",
+    "Journalism or communications",
+    "Research, analysis or market intelligence",
     "Other",
 ]
 
