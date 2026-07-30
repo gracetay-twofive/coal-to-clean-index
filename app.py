@@ -109,14 +109,10 @@ INDUSTRY_MULTIPLIERS = {
     "Hospitality and tourism": [0.95, 1.00, 1.00, 1.15, 1.00, 1.05],
     "Infrastructure": [1.10, 1.05, 1.00, 0.95, 1.10, 1.00],
     "Insurance": [0.95, 1.05, 1.10, 1.05, 1.25, 1.00],
-    "International and intergovernmental organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
-    "Market intelligence, research and data services": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Manufacturing": [1.10, 1.05, 1.00, 0.95, 1.15, 0.95],
-    "Media and communications": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Metals and steel": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mining": [1.15, 1.05, 1.00, 0.95, 1.15, 0.95],
     "Mobility and fleet services": [1.05, 1.00, 1.00, 1.00, 1.10, 1.00],
-    "Non-governmental (NGOs) and civil-society organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Oil and gas": [1.15, 1.05, 1.00, 0.95, 1.10, 1.00],
     "Pharmaceuticals": [0.95, 1.00, 1.00, 1.05, 1.00, 1.05],
     "Power generation": [1.20, 1.10, 1.00, 0.90, 1.00, 1.10],
@@ -133,6 +129,10 @@ INDUSTRY_MULTIPLIERS = {
     "Textiles and apparel": [0.95, 1.00, 1.00, 1.10, 1.00, 1.05],
     "Utilities and energy networks": [1.15, 1.10, 1.00, 0.90, 1.00, 1.10],
     "Waste management": [1.00, 1.00, 1.00, 1.10, 1.00, 1.05],
+    "Non-governmental and civil-society organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+    "International and intergovernmental organisations": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+    "Media and publishing": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
+    "Market intelligence, research and data services": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
     "Other": [1.00, 1.00, 1.00, 1.00, 1.00, 1.00],
 }
 
@@ -143,14 +143,13 @@ ROLE_OPTIONS = [
     "Project developer or originator",
     "Government or regulator",
     "Standard, registry or assurance provider",
+    "Civil society, research or academia",
     "Asset owner or operator",
     "Sustainability, climate or environmental role",
     "Policy, programme or technical specialist",
     "Advocacy, partnerships or stakeholder engagement",
-    "News, editorial or content production",
-    "Communications",
+    "Journalism, editorial or communications",
     "Research, analysis or market intelligence",
-    "Civil society",
     "Other",
 ]
 
@@ -889,7 +888,7 @@ header[data-testid="stHeader"] { background: transparent; }
 .period-nav a.clear { border: 0; background: transparent; text-decoration: underline !important; }
 .period-placeholder { visibility: hidden; height: 55px; }
 
-.section-title { color: var(--ink); font-weight: 600; font-size: 33px; line-height: 1.25; margin: 0 0 12px 0; }
+.section-title { color: var(--ink); font-weight: 600; font-size: 26px; line-height: 1.25; margin: 0 0 12px 0; }
 .section-kicker { color: var(--ink-muted); font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin: -2px 0 12px 0; }
 .section-gap { height: 92px; }
 .anchor { display: block; position: relative; top: -18px; visibility: hidden; }
@@ -1311,10 +1310,10 @@ header[data-testid="stHeader"] { background: transparent; }
 .survey-time { color: var(--ink-muted); font-size: 15px; font-weight: 400; line-height: 1.55; margin-top: 10px; }
 .survey-required-note { color: var(--ink-muted); font-size: 11px; line-height: 1.5; margin: 10px 0 0 0; }
 .survey-subtitle { color: var(--ink); font-size: 19px; font-weight: 600; line-height: 1.35; margin: 28px 0 12px 0; }
-.survey-help { color: var(--ink-muted); font-size: 14px; line-height: 1.55; margin: 4px 0 14px 0; }
+.survey-help { color: var(--ink-muted); font-size: 12px; line-height: 1.55; margin: 4px 0 14px 0; }
 .survey-privacy { color: var(--ink-muted); font-size: 12px; line-height: 1.6; }
-.survey-privacy-before-consent { margin: -5px 0 3px 0; }
-.survey-privacy-after-consent { margin: 1px 0 50px 0; }
+.survey-privacy-before-consent { margin: 12px 0 3px 0; }
+.survey-privacy-after-consent { margin: 1px 0 30px 0; }
 .st-key-validation_contact_consent_row { margin: 0 !important; padding: 0 !important; }
 .st-key-validation_contact_consent_row [data-testid="stCheckbox"] { margin: 0 !important; padding: 0 !important; }
 .survey-details-gap { height: 50px; }
@@ -1324,7 +1323,7 @@ header[data-testid="stHeader"] { background: transparent; }
 .survey-scenario-copy p { margin: 0 0 8px 0; font-size: 15px !important; line-height: 1.68 !important; }
 .survey-scenario-copy p:last-child { margin-bottom: 0; }
 .survey-later-question { margin-top: 38px; }
-.survey-counter { color: var(--accent); font-size: 14px; font-weight: 700; margin: -4px 0 12px 0; }
+.survey-counter { color: var(--accent); font-size: 12px; font-weight: 700; margin: -4px 0 12px 0; }
 .survey-footnote { color: var(--ink-muted); font-size: 11px; line-height: 1.5; margin-top: 8px; }
 .survey-optional-label { color: var(--ink-muted); font-size: 11px; font-weight: 500; margin-left: 6px; }
 .st-key-survey_submit_row { margin-top: 34px; }
@@ -1388,12 +1387,11 @@ header[data-testid="stHeader"] { background: transparent; }
     line-height: 1.45 !important;
 }
 .survey-scenario-lead {
-    margin: 0;
+    margin: 0 0 8px 0;
     color: var(--ink-muted);
     font-family: 'Montserrat', sans-serif !important;
+    font-size: 13px;
     line-height: 1.62;
-    font-size: 14px !important;
-    line-height: 1.62 !important;
 }
 .survey-info-icon {
     margin-left: 5px;
@@ -1631,7 +1629,7 @@ ul[role="listbox"] * {
         line-height: 1.2 !important;
     }
     .survey-intro { font-size: 14px !important; line-height: 1.6 !important; }
-    .survey-subtitle { font-size: 17px !important; margin-top: 26px !important; margin}
+    .survey-subtitle { font-size: 17px !important; margin-top: 26px !important; }
     .survey-question-intro { font-size: 16px !important; }
     .survey-scenario-copy,
     .survey-scenario-copy p { font-size: 15px !important; line-height: 1.62 !important; }
@@ -1680,6 +1678,11 @@ ul[role="listbox"] * {
     }
     .st-key-validation_section [data-testid="stMultiSelect"] { width: 100% !important; }
 
+    /* The survey panel remains compact without locking or moving the page. */
+    .survey-scenario-lead {
+        font-size: 14px !important;
+        line-height: 1.62 !important;
+    }
     .survey-info-link > summary { font-size: 13px !important; }
     .survey-info-panel {
         position: fixed !important;
@@ -2220,14 +2223,25 @@ def ranking_figure(results: pd.DataFrame, show_all: bool, mode: str) -> go.Figur
     for _, row in displayed.iterrows():
         rank_change = int(row.get("Rank change", 0))
         change_text = "No change" if rank_change == 0 else f"{rank_change:+d} position{'s' if abs(rank_change) != 1 else ''}"
-        customdata.append([int(row["Rank"]), change_text, int(row.get("Base rank", row["Rank"]))])
+        capacity = row.get("Operating coal capacity (MW)")
+        capacity_text = f"{float(capacity):,.0f} MW" if pd.notna(capacity) else "Not available"
+        customdata.append(
+            [
+                int(row["Rank"]),
+                change_text,
+                int(row.get("Base rank", row["Rank"])),
+                capacity_text,
+            ]
+        )
 
     score_text = displayed["Overall score"].map(lambda value: f"{float(value):.2f}")
     hover_template = (
         "<b>%{y}</b><br>Adjusted rank: %{customdata[0]}<br>"
-        "Position change: %{customdata[1]}<extra></extra>"
+        "Position change: %{customdata[1]}<br>"
+        "Operating coal capacity: %{customdata[3]}<extra></extra>"
         if overlay_mode
-        else "<b>%{y}</b><br>Rank: %{customdata[0]}<extra></extra>"
+        else "<b>%{y}</b><br>Rank: %{customdata[0]}<br>"
+        "Operating coal capacity: %{customdata[3]}<extra></extra>"
     )
 
     figure = go.Figure()
@@ -2275,7 +2289,7 @@ def ranking_figure(results: pd.DataFrame, show_all: bool, mode: str) -> go.Figur
                 mode="markers",
                 customdata=customdata,
                 marker=dict(symbol="diamond", size=13, color="#2b5688", line=dict(width=1, color="#ffffff")),
-                hovertemplate="<b>%{y}</b><br>Base rank: %{customdata[2]}<br>Base index score: %{x:.2f}<extra></extra>",
+                hovertemplate="<b>%{y}</b><br>Base rank: %{customdata[2]}<br>Base index score: %{x:.2f}<br>Operating coal capacity: %{customdata[3]}<extra></extra>",
                 name="Base index",
             )
         )
@@ -3571,7 +3585,7 @@ def validation_more_info(*, compact: bool = False) -> None:
     if compact:
         trigger_html = f"""
         <div class="survey-scenario-lead">
-          Imagine that you are assessing whether to support a coal-to-clean transition-credit project and scrutinising the country or jurisdiction where the coal plant is.
+          Imagine that you are assessing whether to support a coal-to-clean transition-credit project.
           <details class="survey-info-details survey-info-icon" id="{details_id}">
             <summary aria-label="More about coal-to-clean projects and transition credits" title="More about coal-to-clean projects and transition credits">ⓘ</summary>
             <div class="survey-info-panel">{SURVEY_MORE_INFO_BODY}</div>
@@ -3749,17 +3763,17 @@ def render_validation(index_data: pd.DataFrame) -> None:
             with col2:
                 linkedin = st.text_input("LinkedIn profile (optional)", key="validation_linkedin")
 
-            with st.container(key="validation_contact_consent_row"):
-                contact_consent = st.checkbox(
-                    "I consent to being contacted about my responses.",
-                    key="validation_contact_consent",
-                )
             st.markdown(
                 """
                 <div class="survey-privacy survey-privacy-before-consent">Your details will be kept confidential and are requested solely for research purposes – to categorise respondent roles and, where you consent, to follow up about your responses.</div>
                 """,
                 unsafe_allow_html=True,
             )
+            with st.container(key="validation_contact_consent_row"):
+                contact_consent = st.checkbox(
+                    "I consent to being contacted about my responses.",
+                    key="validation_contact_consent",
+                )
             st.markdown(
                 """
                 <div class="survey-privacy survey-privacy-after-consent">Your details will not be disclosed outside the research, except through services used to securely store responses. Findings will be reported only in aggregate or de-identified form.</div>
