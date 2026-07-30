@@ -148,7 +148,8 @@ ROLE_OPTIONS = [
     "Sustainability, climate or environmental role",
     "Policy, programme or technical specialist",
     "Advocacy, partnerships or stakeholder engagement",
-    "Journalism or communications",
+    "News, editorial or content production",
+    "Communications",
     "Research, analysis or market intelligence",
     "Other",
 ]
